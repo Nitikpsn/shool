@@ -1,2 +1,2 @@
 # shool
-AI baesd excel sheel compareing tool
+AI baesd excel sheet compareing tool
