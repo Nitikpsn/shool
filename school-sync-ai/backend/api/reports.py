@@ -24,7 +24,7 @@ def generate_report(req: ReportRequest):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = sorted([f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls"))])
+    files = sorted([f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))])
     if len(files) < 2:
         raise HTTPException(400, "Need two Excel files")
 

@@ -21,9 +21,9 @@ async def run_comparison(req: CompareRequest):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls"))]
+    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))]
     if len(files) < 2:
-        raise HTTPException(400, "Need two Excel files")
+        raise HTTPException(400, "Need two files")
 
     school_path = os.path.join(session_dir, files[0])
     portal_path = os.path.join(session_dir, files[1])
@@ -42,7 +42,7 @@ def get_stats(session_id: str):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls"))]
+    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))]
     if not files:
         raise HTTPException(400, "No files found")
 
