@@ -22,6 +22,10 @@ app.include_router(reports_router)
 app.include_router(ai_router)
 
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the School Sync AI API!"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
