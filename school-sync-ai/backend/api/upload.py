@@ -1,23 +1,39 @@
 import os, uuid
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.config import settings
 from services.excel_parser import parse_excel
 from services.validator import validate_records
 
 router = APIRouter(prefix="/api")
 
+ALLOWED_EXTENSIONS = {".xlsx", ".xls", ".csv"}
+
 UPLOAD_DIR = settings.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
+def _validate_extension(filename: str):
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{ext}'. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+
 @router.post("/upload")
 async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+    _validate_extension(file1.filename or "school.xlsx")
+    _validate_extension(file2.filename or "portal.xlsx")
+
     session_id = str(uuid.uuid4())
     session_dir = os.path.join(UPLOAD_DIR, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
-    path1 = os.path.join(session_dir, file1.filename or "school.xlsx")
-    path2 = os.path.join(session_dir, file2.filename or "portal.xlsx")
+    fname1 = file1.filename or "school.xlsx"
+    fname2 = file2.filename or "portal.xlsx"
+    path1 = os.path.join(session_dir, fname1)
+    path2 = os.path.join(session_dir, fname2)
 
     with open(path1, "wb") as f:
         f.write(await file1.read())

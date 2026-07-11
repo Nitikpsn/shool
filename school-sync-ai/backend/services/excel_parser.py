@@ -32,8 +32,15 @@ def infer_columns(df: pd.DataFrame) -> dict[str, str]:
     return col_map
 
 
+def read_file(filepath: str) -> pd.DataFrame:
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext == ".csv":
+        return pd.read_csv(filepath, dtype=str)
+    return pd.read_excel(filepath, dtype=str)
+
+
 def parse_excel(filepath: str, source_sheet: str) -> list[dict[str, Any]]:
-    df = pd.read_excel(filepath, dtype=str)
+    df = read_file(filepath)
     df = df.map(lambda x: x.strip() if isinstance(x, str) else x).fillna("")
     col_map = infer_columns(df)
 

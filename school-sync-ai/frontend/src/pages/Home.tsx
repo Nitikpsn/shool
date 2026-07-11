@@ -34,7 +34,7 @@ export default function Home() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-1">Upload Excel Files</h2>
-          <p className="text-sm text-gray-500">Upload school.xlsx (your records) and portal.xlsx (official records)</p>
+          <p className="text-sm text-gray-500">Upload school & portal files (.xlsx, .xls, .csv) to compare records</p>
         </div>
 
         <UploadZone onUpload={handleUpload} />

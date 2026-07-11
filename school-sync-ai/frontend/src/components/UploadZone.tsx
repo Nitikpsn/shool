@@ -24,13 +24,18 @@ export default function UploadZone({ onUpload }: UploadZoneProps) {
     }
   }, [schoolFile, onUpload])
 
-  const school = useDropzone({ onDrop: onSchoolDrop, accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'application/vnd.ms-excel': ['.xls'] } })
-  const portal = useDropzone({ onDrop: onPortalDrop, accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 'application/vnd.ms-excel': ['.xls'] } })
+  const acceptTypes = {
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    'application/vnd.ms-excel': ['.xls'],
+    'text/csv': ['.csv'],
+  }
+  const school = useDropzone({ onDrop: onSchoolDrop, accept: acceptTypes })
+  const portal = useDropzone({ onDrop: onPortalDrop, accept: acceptTypes })
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <DropBox zone={school} file={schoolFile} label="School Excel" hint="school.xlsx" />
-      <DropBox zone={portal} file={portalFile} label="Portal Excel" hint="portal.xlsx" />
+      <DropBox zone={school} file={schoolFile} label="School File" hint="school.xlsx / .xls / .csv" />
+      <DropBox zone={portal} file={portalFile} label="Portal File" hint="portal.xlsx / .xls / .csv" />
     </div>
   )
 }
