@@ -1,4 +1,4 @@
-import os, uuid
+import os, uuid, time
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.config import settings
 from services.excel_parser import parse_excel
@@ -54,3 +54,21 @@ async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
         "school_sample": school_records[:3] if school_records else [],
         "portal_sample": portal_records[:3] if portal_records else [],
     }
+
+
+@router.get("/sessions")
+def list_sessions():
+    if not os.path.exists(UPLOAD_DIR):
+        return {"sessions": []}
+    sessions = []
+    for sid in sorted(os.listdir(UPLOAD_DIR), reverse=True):
+        sdir = os.path.join(UPLOAD_DIR, sid)
+        if os.path.isdir(sdir):
+            files = [f for f in os.listdir(sdir) if f.endswith((".xlsx", ".xls", ".csv"))]
+            mtime = os.path.getmtime(sdir)
+            sessions.append({
+                "session_id": sid,
+                "files": files,
+                "created": time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime)),
+            })
+    return {"sessions": sessions[:20]}
