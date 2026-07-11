@@ -44,4 +44,3 @@ AI: Gemini 2.5 Flash (column mapping, Hindi normalization, NL queries)
 ## Deployment
 
 - Frontend → Vercel
-- Backend → Railway / Render / Fly.io
