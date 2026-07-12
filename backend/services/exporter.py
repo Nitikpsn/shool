@@ -38,7 +38,7 @@ def export_report_to_excel(report_data: dict[str, Any], output_path: str):
     if cw:
         df_class = pd.DataFrame.from_dict(cw, orient="index")
         df_class.index.name = "Class"
-        df_class.to_frame().to_excel(writer, sheet_name="Class Wise")
+        df_class.to_excel(writer, sheet_name="Class Wise")
 
     # Category-wise
     cat = report_data.get("category_wise", {})

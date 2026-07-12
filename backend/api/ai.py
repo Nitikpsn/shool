@@ -22,11 +22,9 @@ def ai_chat(req: ChatRequest):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))]
-    if not files:
-        raise HTTPException(400, "No files found")
-
-    portal_path = os.path.join(session_dir, files[1] if len(files) > 1 else files[0])
+    portal_path = os.path.join(session_dir, "portal.xlsx")
+    if not os.path.exists(portal_path):
+        raise HTTPException(404, "Portal file not found")
     portal_records = parse_excel(portal_path, "portal")
 
     normalized = gemini_service.normalize_query(req.query)

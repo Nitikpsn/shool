@@ -44,6 +44,14 @@ def parse_excel(filepath: str, source_sheet: str) -> list[dict[str, Any]]:
     df = df.map(lambda x: x.strip() if isinstance(x, str) else x).fillna("")
     col_map = infer_columns(df)
 
+    if "admission_no" not in col_map or "student_name" not in col_map:
+        try:
+            from services.gemini_service import gemini_service
+            ai_map = gemini_service.column_mapping(list(df.columns))
+            col_map.update(ai_map)
+        except Exception:
+            pass
+
     records = []
     for _, row in df.iterrows():
         record = {
