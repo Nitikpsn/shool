@@ -1,14 +1,25 @@
-import os
+import os, glob
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.config import settings
 from services.excel_parser import parse_excel
 from services.comparator import compare
 from services.stats_engine import compute_stats
+from services.gemini_service import gemini_service
 
 router = APIRouter(prefix="/api")
 
 UPLOAD_DIR = settings.upload_dir
+
+VALID_EXTENSIONS = (".xlsx", ".xls", ".csv")
+
+
+def _resolve(session_dir: str, prefix: str) -> str:
+    pattern = os.path.join(session_dir, f"{prefix}.*")
+    matches = glob.glob(pattern)
+    if not matches:
+        raise HTTPException(400, f"No file found for '{prefix}' in session")
+    return matches[0]
 
 
 class CompareRequest(BaseModel):
@@ -21,15 +32,11 @@ async def run_comparison(req: CompareRequest):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))]
-    if len(files) < 2:
-        raise HTTPException(400, "Need two files")
+    school_path = _resolve(session_dir, "school")
+    portal_path = _resolve(session_dir, "portal")
 
-    school_path = os.path.join(session_dir, files[0])
-    portal_path = os.path.join(session_dir, files[1])
-
-    school_records = parse_excel(school_path, "school")
-    portal_records = parse_excel(portal_path, "portal")
+    school_records = parse_excel(school_path, "school", ai_fallback=gemini_service)
+    portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
 
     result = compare(school_records, portal_records)
 
@@ -42,12 +49,8 @@ def get_stats(session_id: str):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = [f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))]
-    if not files:
-        raise HTTPException(400, "No files found")
-
-    portal_path = os.path.join(session_dir, files[1] if len(files) > 1 else files[0])
-    portal_records = parse_excel(portal_path, "portal")
+    portal_path = _resolve(session_dir, "portal")
+    portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
     stats = compute_stats(portal_records)
 
     return stats

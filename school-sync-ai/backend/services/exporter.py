@@ -33,12 +33,11 @@ def build_report_data(portal_records: list[dict], comparison: dict) -> dict[str,
 def export_report_to_excel(report_data: dict[str, Any], output_path: str):
     writer = pd.ExcelWriter(output_path, engine="openpyxl")
 
-    # Class-wise
     cw = report_data.get("class_wise", {})
     if cw:
         df_class = pd.DataFrame.from_dict(cw, orient="index")
         df_class.index.name = "Class"
-        df_class.to_frame().to_excel(writer, sheet_name="Class Wise")
+        df_class.to_excel(writer, sheet_name="Class Wise")
 
     # Category-wise
     cat = report_data.get("category_wise", {})

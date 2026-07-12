@@ -1,4 +1,4 @@
-import os
+import os, glob
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
@@ -6,12 +6,21 @@ from app.config import settings
 from services.excel_parser import parse_excel
 from services.comparator import compare
 from services.exporter import build_report_data, export_report_to_excel
+from services.gemini_service import gemini_service
 
 router = APIRouter(prefix="/api")
 
 UPLOAD_DIR = settings.upload_dir
 REPORT_DIR = settings.report_dir
 os.makedirs(REPORT_DIR, exist_ok=True)
+
+
+def _resolve(session_dir: str, prefix: str) -> str:
+    pattern = os.path.join(session_dir, f"{prefix}.*")
+    matches = glob.glob(pattern)
+    if not matches:
+        raise HTTPException(400, f"No file found for '{prefix}' in session")
+    return matches[0]
 
 
 class ReportRequest(BaseModel):
@@ -24,15 +33,11 @@ def generate_report(req: ReportRequest):
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
 
-    files = sorted([f for f in os.listdir(session_dir) if f.endswith((".xlsx", ".xls", ".csv"))])
-    if len(files) < 2:
-        raise HTTPException(400, "Need two Excel files")
+    school_path = _resolve(session_dir, "school")
+    portal_path = _resolve(session_dir, "portal")
 
-    school_path = os.path.join(session_dir, files[0])
-    portal_path = os.path.join(session_dir, files[1])
-
-    school_records = parse_excel(school_path, "school")
-    portal_records = parse_excel(portal_path, "portal")
+    school_records = parse_excel(school_path, "school", ai_fallback=gemini_service)
+    portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
 
     comparison = compare(school_records, portal_records)
     report_data = build_report_data(portal_records, comparison)

@@ -1,10 +1,12 @@
 import pandas as pd
 import os
-from typing import Any
+from typing import Any, Optional
 from utils.normalize import normalize_gender, normalize_category, normalize_language
 
+CRITICAL_FIELDS = {"admission_no", "student_name"}
 
-def infer_columns(df: pd.DataFrame) -> dict[str, str]:
+
+def infer_columns(df: pd.DataFrame, ai_fallback: Optional[Any] = None) -> dict[str, str]:
     col_map = {}
     lower_cols = {c: str(c).strip().lower() for c in df.columns}
 
@@ -29,6 +31,19 @@ def infer_columns(df: pd.DataFrame) -> dict[str, str]:
         elif any(k in lower_col for k in lang_keywords):
             col_map["language"] = raw_col
 
+    mapped_fields = set(col_map.keys())
+    missing_critical = CRITICAL_FIELDS - mapped_fields
+
+    if missing_critical and ai_fallback is not None:
+        try:
+            ai_map = ai_fallback.column_mapping(list(df.columns))
+            for field in missing_critical:
+                if field in ai_map and ai_map[field] in df.columns:
+                    if field not in col_map:
+                        col_map[field] = ai_map[field]
+        except Exception:
+            pass
+
     return col_map
 
 
@@ -39,10 +54,10 @@ def read_file(filepath: str) -> pd.DataFrame:
     return pd.read_excel(filepath, dtype=str)
 
 
-def parse_excel(filepath: str, source_sheet: str) -> list[dict[str, Any]]:
+def parse_excel(filepath: str, source_sheet: str, ai_fallback: Optional[Any] = None) -> list[dict[str, Any]]:
     df = read_file(filepath)
     df = df.map(lambda x: x.strip() if isinstance(x, str) else x).fillna("")
-    col_map = infer_columns(df)
+    col_map = infer_columns(df, ai_fallback=ai_fallback)
 
     records = []
     for _, row in df.iterrows():

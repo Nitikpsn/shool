@@ -3,6 +3,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.config import settings
 from services.excel_parser import parse_excel
 from services.validator import validate_records
+from services.gemini_service import gemini_service
 
 router = APIRouter(prefix="/api")
 
@@ -30,18 +31,18 @@ async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
     session_dir = os.path.join(UPLOAD_DIR, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
-    fname1 = file1.filename or "school.xlsx"
-    fname2 = file2.filename or "portal.xlsx"
-    path1 = os.path.join(session_dir, fname1)
-    path2 = os.path.join(session_dir, fname2)
+    ext1 = os.path.splitext(file1.filename or "school.xlsx")[1]
+    ext2 = os.path.splitext(file2.filename or "portal.xlsx")[1]
+    path1 = os.path.join(session_dir, f"school{ext1}")
+    path2 = os.path.join(session_dir, f"portal{ext2}")
 
     with open(path1, "wb") as f:
         f.write(await file1.read())
     with open(path2, "wb") as f:
         f.write(await file2.read())
 
-    school_records = parse_excel(path1, "school")
-    portal_records = parse_excel(path2, "portal")
+    school_records = parse_excel(path1, "school", ai_fallback=gemini_service)
+    portal_records = parse_excel(path2, "portal", ai_fallback=gemini_service)
 
     errors = validate_records(school_records) + validate_records(portal_records)
 
