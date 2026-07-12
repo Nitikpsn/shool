@@ -30,10 +30,8 @@ async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
     session_dir = os.path.join(UPLOAD_DIR, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
-    fname1 = file1.filename or "school.xlsx"
-    fname2 = file2.filename or "portal.xlsx"
-    path1 = os.path.join(session_dir, fname1)
-    path2 = os.path.join(session_dir, fname2)
+    path1 = os.path.join(session_dir, "school.xlsx")
+    path2 = os.path.join(session_dir, "portal.xlsx")
 
     with open(path1, "wb") as f:
         f.write(await file1.read())
