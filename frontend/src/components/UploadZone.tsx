@@ -44,15 +44,23 @@ function DropBox({ zone, file, label, hint }: { zone: ReturnType<typeof useDropz
   return (
     <div
       {...zone.getRootProps()}
-      className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-        zone.isDragActive ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+      className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+        zone.isDragActive
+          ? 'border-indigo-300 bg-indigo-50'
+          : file
+            ? 'border-emerald-200 bg-emerald-50/50'
+            : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
       }`}
     >
       <input {...zone.getInputProps()} />
-      <Upload className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-      <p className="text-sm font-medium text-gray-700">{label}</p>
-      <p className="text-xs text-gray-400 mt-1">{file ? file.name : `Drop ${hint} here`}</p>
-      {file && <p className="text-xs text-gray-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>}
+      <div className={`w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center transition-colors ${
+        file ? 'bg-emerald-100' : 'bg-slate-100'
+      }`}>
+        <Upload className={`w-5 h-5 ${file ? 'text-emerald-500' : 'text-slate-400'}`} />
+      </div>
+      <p className="text-sm font-medium text-slate-700">{label}</p>
+      <p className="text-xs text-slate-400 mt-1.5">{file ? file.name : `Drop ${hint} here`}</p>
+      {file && <p className="text-xs text-slate-400 mt-1">{(file.size / 1024).toFixed(1)} KB</p>}
     </div>
   )
 }
