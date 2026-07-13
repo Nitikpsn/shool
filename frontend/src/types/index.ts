@@ -13,41 +13,30 @@ export interface CompareResult {
   missing: number
   modified: number
   new: number
-  matched_admissions: string[]
+  matched_ids: string[]
   modifications: Modification[]
-  new_records: StudentRecord[]
-  missing_records: StudentRecord[]
+  new_records: Record<string, string>[]
+  missing_records: Record<string, string>[]
 }
 
 export interface Modification {
-  admission_no: string
+  id: string
   field_name: string
   old_value: string
   new_value: string
-  student_name: string
+  record_name: string
   difference_type: string
 }
 
-export interface StudentRecord {
-  admission_no: string
-  student_name: string
-  class_name: string
-  gender: string
-  category: string
-  language: string
-  source_sheet: string
-  difference_type?: string
+export interface StatsResult {
+  labels: Record<string, number>
+  charts?: ChartData[]
 }
 
-export interface StatsResult {
-  boys: number
-  girls: number
-  sc: number
-  obc: number
-  st: number
-  ews: number
-  gen: number
-  total: number
+export interface ChartData {
+  title: string
+  type: 'pie' | 'bar'
+  data: { name: string; value: number }[]
 }
 
 export interface ReportResult {
@@ -67,5 +56,13 @@ export interface ChatResult {
   normalized_query: string
   filter_applied: Record<string, string>
   total_records: number
-  records: StudentRecord[]
+  records: Record<string, string>[]
+}
+
+export interface TableColumn {
+  key: string
+  label: string
+  sortable?: boolean
+  filterable?: boolean
+  render?: (value: string, row: Record<string, string>) => React.ReactNode
 }

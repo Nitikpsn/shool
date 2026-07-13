@@ -1,107 +1,53 @@
-import { useMemo, useState } from 'react'
-import { Modification, StudentRecord } from '../types'
+import { useState, useMemo } from 'react'
+import DataTable from './DataTable'
 
-interface ComparisonTableProps {
-  modifications: Modification[]
-  newRecords: StudentRecord[]
-  missingRecords: StudentRecord[]
-}
-
-type Tab = 'modified' | 'new' | 'missing'
-
-export default function ComparisonTable({ modifications, newRecords, missingRecords }: ComparisonTableProps) {
-  const [tab, setTab] = useState<Tab>('modified')
+export default function ComparisonTable({ modifications, newRecords, missingRecords }: any) {
+  const [tab, setTab] = useState('modified')
 
   const tabs = [
-    { key: 'modified' as Tab, label: 'Modified', count: modifications.length, color: 'text-amber-600' },
-    { key: 'new' as Tab, label: 'New Students', count: newRecords.length, color: 'text-blue-600' },
-    { key: 'missing' as Tab, label: 'Missing', count: missingRecords.length, color: 'text-red-600' },
+    { key: 'modified', label: 'Modified', count: modifications.length },
+    { key: 'new', label: 'New', count: newRecords.length },
+    { key: 'missing', label: 'Missing', count: missingRecords.length },
   ]
 
+  const modCols = [
+    { key: 'id', label: 'ID' },
+    { key: 'record_name', label: 'Name' },
+    { key: 'field_name', label: 'Field', render: (v: string) => <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">{v}</span> },
+    { key: 'old_value', label: 'Old', render: (v: string) => <span className="text-red-600 dark:text-red-400 text-xs">{v || '—'}</span> },
+    { key: 'new_value', label: 'New', render: (v: string) => <span className="text-emerald-600 dark:text-emerald-400 text-xs">{v || '—'}</span> },
+  ]
+
+  const dynCols = useMemo(() => {
+    const sample = newRecords[0] || missingRecords[0]
+    if (!sample) return []
+    return Object.keys(sample).map(key => ({
+      key,
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+    }))
+  }, [newRecords, missingRecords])
+
   return (
-    <div className="mt-4 bg-white border border-gray-200 rounded-lg">
-      <div className="border-b border-gray-200 flex">
+    <div className="mt-4">
+      <div className="flex gap-1 mb-3 bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 w-fit">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               tab === t.key
-                ? 'border-gray-900 text-gray-900'
-                : 'border-transparent text-gray-400 hover:text-gray-600'
+                ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
             }`}
           >
-            {t.label}
-            <span className={`ml-1.5 ${t.color}`}>({t.count})</span>
+            {t.label} ({t.count})
           </button>
         ))}
       </div>
 
-      <div className="overflow-x-auto">
-        {tab === 'modified' && <ModificationsTable data={modifications} />}
-        {tab === 'new' && <SimpleTable records={newRecords} />}
-        {tab === 'missing' && <SimpleTable records={missingRecords} />}
-      </div>
+      {tab === 'modified' && <DataTable columns={modCols} data={modifications.map((m: any) => ({ ...m }))} emptyMessage="No modifications" />}
+      {tab === 'new' && <DataTable columns={dynCols} data={newRecords} emptyMessage="No new records" />}
+      {tab === 'missing' && <DataTable columns={dynCols} data={missingRecords} emptyMessage="No missing records" />}
     </div>
-  )
-}
-
-function ModificationsTable({ data }: { data: Modification[] }) {
-  if (!data.length) return <p className="p-5 text-sm text-gray-400">No modifications found</p>
-
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-gray-100 bg-gray-50/50">
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Admission No</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Student</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Field</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Old Value</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">New Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((m, i) => (
-          <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-            <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{m.admission_no}</td>
-            <td className="px-4 py-2.5 text-gray-900">{m.student_name}</td>
-            <td className="px-4 py-2.5">
-              <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded text-xs font-medium">{m.field_name}</span>
-            </td>
-            <td className="px-4 py-2.5 text-red-600 text-xs">{m.old_value || '—'}</td>
-            <td className="px-4 py-2.5 text-green-600 text-xs">{m.new_value || '—'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
-}
-
-function SimpleTable({ records }: { records: StudentRecord[] }) {
-  if (!records.length) return <p className="p-5 text-sm text-gray-400">No records</p>
-
-  return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-gray-100 bg-gray-50/50">
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Admission No</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Name</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Class</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Gender</th>
-          <th className="text-left px-4 py-2.5 font-medium text-gray-500 text-xs uppercase tracking-wider">Category</th>
-        </tr>
-      </thead>
-      <tbody>
-        {records.map((r, i) => (
-          <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
-            <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{r.admission_no}</td>
-            <td className="px-4 py-2.5 text-gray-900">{r.student_name}</td>
-            <td className="px-4 py-2.5 text-gray-700">{r.class_name}</td>
-            <td className="px-4 py-2.5 text-gray-700">{r.gender}</td>
-            <td className="px-4 py-2.5 text-gray-700">{r.category}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   )
 }
