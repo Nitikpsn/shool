@@ -469,6 +469,102 @@ def aggregate_by_class(
     return result
 
 
+def aggregate_by_section(
+    df: pd.DataFrame, col_map: dict[str | int, str]
+) -> dict[str, dict[str, int]]:
+    """
+    Aggregate at the class+section level (e.g. \"1-A\", \"2-B\").
+    Returns {class_id: {category: count, total: count}}.
+    """
+    class_col = next((r for r, m in col_map.items() if m == "class"), None)
+    section_col = _find_section_col(df, col_map)
+
+    mask = df.apply(_is_total_row, axis=1)
+    df_clean = df[~mask].copy()
+
+    if class_col:
+        df_clean = df_clean.dropna(subset=[class_col])
+        df_clean = df_clean[df_clean[class_col].astype(str).str.strip() != ""]
+
+    if df_clean.empty:
+        return {}
+
+    if class_col:
+        df_clean["_cls"] = df_clean[class_col].astype(str).str.upper().str.strip()
+        df_clean["_cls"] = df_clean["_cls"].apply(normalize_class_label).astype(str)
+    else:
+        df_clean["_cls"] = "?"
+    if section_col:
+        df_clean["_sec"] = df_clean[section_col].astype(str).str.upper().str.strip()
+    else:
+        df_clean["_sec"] = ""
+
+    category_raw_cols = [
+        raw for raw, mapped in col_map.items()
+        if mapped not in ("class", "section", "boys", "girls")
+    ]
+    if not category_raw_cols or df_clean.empty:
+        return {}
+
+    total_raw_col = next((raw for raw, mapped in col_map.items() if mapped == "total"), None)
+    cat_raw_cols_no_total = [c for c in category_raw_cols if c != total_raw_col]
+
+    if not cat_raw_cols_no_total and not total_raw_col:
+        return {}
+
+    cat_rename = {}
+    for raw in cat_raw_cols_no_total:
+        mapped = col_map[raw]
+        if mapped.endswith("_boys") or mapped.endswith("_girls"):
+            cat_rename[raw] = mapped.rsplit("_", 1)[0]
+        else:
+            cat_rename[raw] = mapped
+
+    numeric_cols = list(cat_raw_cols_no_total)
+    if total_raw_col:
+        numeric_cols.append(total_raw_col)
+    for c in numeric_cols:
+        if c in df_clean.columns:
+            df_clean[c] = pd.to_numeric(df_clean[c], errors="coerce").fillna(0)
+
+    if cat_raw_cols_no_total:
+        cat_bool_mask = df_clean[cat_raw_cols_no_total].sum(axis=1) > 0
+        df_clean = df_clean[cat_bool_mask]
+
+    if df_clean.empty:
+        return {}
+
+    group_keys = ["_cls", "_sec"]
+    numeric_subset = [c for c in numeric_cols if c in df_clean.columns]
+    if not numeric_subset:
+        return {}
+
+    grouped = df_clean.groupby(group_keys)[numeric_subset].sum(min_count=1).reset_index()
+
+    rename_map = {k: v for k, v in cat_rename.items() if k in grouped.columns}
+    if rename_map:
+        grouped = grouped.rename(columns=rename_map)
+    if total_raw_col and total_raw_col in grouped.columns:
+        grouped = grouped.rename(columns={total_raw_col: "_row_total"})
+
+    cat_cols = list(set(cat_rename.values()))
+    available_cats = [c for c in cat_cols if c in grouped.columns]
+
+    result = {}
+    for _, row in grouped.iterrows():
+        cls = str(row["_cls"])
+        sec = str(row["_sec"]) if str(row["_sec"]) else ""
+        class_id = f"{cls}-{sec}" if sec else cls
+        entry = {}
+        if available_cats:
+            for c in available_cats:
+                entry[c] = _parse_numeric(row.get(c, 0))
+        if "_row_total" in grouped.columns:
+            entry["total"] = _parse_numeric(row.get("_row_total", 0))
+        result[class_id] = entry
+    return result
+
+
 def has_gender_split(df: pd.DataFrame, col_map: dict[str, str]) -> bool:
     for mapped in col_map.values():
         if mapped.endswith("_boys") or mapped.endswith("_girls"):
@@ -543,6 +639,7 @@ def parse_category_file(
         df = df[df[total_col] > 0]
 
     aggregated = aggregate_by_class(df, col_map)
+    section_agg = aggregate_by_section(df, col_map)
 
     # Phase 5: Detect subtotal rows, consistency checks
     has_subtotal = False
@@ -557,6 +654,7 @@ def parse_category_file(
     return {
         "file_label": file_label,
         "aggregated": {str(k): v for k, v in aggregated.items()},
+        "section_aggregated": section_agg,
         "col_map": col_map,
         "has_subtotal_rows": has_subtotal,
         "has_gender_split": gender_split,

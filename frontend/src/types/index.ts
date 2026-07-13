@@ -47,49 +47,24 @@ export interface ChartData {
   data: { name: string; value: number }[]
 }
 
-export interface CategoryDelta {
-  [category: string]: number
+export interface MetricValue {
+  from: number
+  to: number
+  delta: number
 }
 
-export interface ClassDiff {
-  class: string | number
-  deltas: CategoryDelta
-  net_delta: number
-  abs_delta_sum: number
-  students_delta: number
-  is_reclassification: boolean
-  reclassification_score: number
-  school_totals: Record<string, number>
-  govt_totals: Record<string, number>
-  school_total_students: number
-  govt_total_students: number
-  positive_deltas: Record<string, number>
-  negative_deltas: Record<string, number>
-}
-
-export interface ConsistencyCheck {
-  file: string
-  class: string | number
-  category_sum: number
-  students_total: number
-  gap: number
-  severity: string
+export interface Discrepancy {
+  class_id: string
+  metrics: Record<string, MetricValue>
 }
 
 export interface CategoryCompareResult {
-  class_diffs: ClassDiff[]
   summary: {
-    total_classes: number
-    total_reclassifications: number
-    total_headcount_diffs: number
-    total_students_school: number
-    total_students_govt: number
-    total_delta_net: number
-    total_delta_abs: number
+    school_total: number
+    portal_total: number
+    net_difference: number
   }
-  flags: { type: string; message: string; classes: (string | number)[] }[]
-  school_meta: { has_subtotal_rows: boolean; has_gender_split: boolean; total_consistency_warnings: number; consistency_checks: ConsistencyCheck[] }
-  govt_meta: { has_subtotal_rows: boolean; has_gender_split: boolean; total_consistency_warnings: number; consistency_checks: ConsistencyCheck[] }
+  discrepancies: Discrepancy[]
 }
 
 export interface ReportResult {
