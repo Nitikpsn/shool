@@ -1,4 +1,4 @@
-import type { UploadResult, CompareResult, StatsResult, ReportResult, ChatResult, Modification } from '../types'
+import type { UploadResult, CompareResult, StatsResult, ReportResult, ChatResult, Modification, CategoryCompareResult } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -100,5 +100,12 @@ export async function chatQuery(sessionId: string, query: string): Promise<ChatR
   return apiFetch<ChatResult>('/api/chat', {
     method: 'POST',
     body: JSON.stringify({ session_id: sessionId, query }),
+  })
+}
+
+export async function compareCategories(sessionId: string): Promise<CategoryCompareResult> {
+  return apiFetch<CategoryCompareResult>('/api/compare/categories', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId }),
   })
 }

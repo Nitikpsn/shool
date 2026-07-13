@@ -1,3 +1,5 @@
+from rapidfuzz import fuzz
+
 GENDER_MAP = {
     "male": "boy", "m": "boy", "boy": "boy",
     "लड़का": "boy",
@@ -21,6 +23,39 @@ CATEGORY_MAP = {
     "none": "GEN", "n/a": "GEN",
 }
 
+CATEGORY_ALIASES = {
+    "general": ["सामान्य", "general", "gen"],
+    "obc": ["अन्य पिछड़ा वर्ग", "obc", "other backward class", "o.b.c."],
+    "obc_cl": ["अन्य पिछड़ा वर्ग (सीएल)", "obc cl", "obc-cl", "obc (cl)"],
+    "obc_ncl": ["अन्य पिछड़ा वर्ग (एनसीएल)", "obc ncl", "obc-ncl", "obc (ncl)"],
+    "sc": ["एस.सी.", "sc", "scheduled caste"],
+    "st": ["एस.टी.", "st", "scheduled tribe"],
+    "muslim": ["मुस्लिम", "muslim"],
+    "christian": ["क्रिस्चियन", "christian"],
+    "sikh": ["सिख", "sikh"],
+    "buddhist": ["बुद्धिस्ट", "buddhist"],
+    "parsi": ["पारसी", "parsi"],
+    "jain": ["जैन", "jain"],
+    "minority_total": ["अल्पसंख्यक", "minority"],
+    "cwsn": ["विकलांग", "cwsn", "divyang", "disabled"],
+    "rte": ["rte"],
+    "sgc": ["sgc"],
+    "boys": ["छात्र", "boys", "male"],
+    "girls": ["छात्रा", "girls", "female"],
+    "total": ["कुल", "योग", "total", "grand total", "संख्या"],
+}
+
+ROMAN_TO_NUM = {
+    "i": 1, "ii": 2, "iii": 3, "iv": 4, "v": 5,
+    "vi": 6, "vii": 7, "viii": 8, "ix": 9, "x": 10,
+    "xi": 11, "xii": 12,
+}
+
+CLASS_ORDER = {
+    "nursery": -2, "lkg": -1, "ukg": 0,
+    "pre-primary": -1, "pre primary": -1, "preprimary": -1,
+}
+
 LANGUAGE_MAP = {
     "hindi": "Hindi", "hi": "Hindi", "हिंदी": "Hindi",
     "english": "English", "en": "English", "अंग्रेज़ी": "English",
@@ -39,3 +74,35 @@ def normalize_category(value: str) -> str:
 
 def normalize_language(value: str) -> str:
     return LANGUAGE_MAP.get(value.strip().lower(), value.strip().title())
+
+
+def resolve_alias(label: str, threshold: float = 85) -> tuple[str | None, str | None]:
+    clean = label.strip().lower()
+    if not clean:
+        return None, None
+
+    for canonical, aliases in CATEGORY_ALIASES.items():
+        if clean == canonical.lower():
+            return canonical, canonical
+        for alias in aliases:
+            if clean == alias.lower():
+                return canonical, alias
+
+    for canonical, aliases in CATEGORY_ALIASES.items():
+        for alias in aliases:
+            score = fuzz.partial_ratio(clean, alias.lower())
+            if score >= threshold:
+                return canonical, alias
+    return None, None
+
+
+def normalize_class_label(label: str) -> int | str:
+    clean = label.strip().lower()
+    if clean in CLASS_ORDER:
+        return CLASS_ORDER[clean]
+    if clean in ROMAN_TO_NUM:
+        return ROMAN_TO_NUM[clean]
+    try:
+        return int(clean)
+    except ValueError:
+        return clean

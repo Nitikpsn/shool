@@ -102,7 +102,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3 text-center">
-          <p className="text-xs text-neutral-400">Made by <a href="https://github.com/Nitikpsn" target="_blank" rel="noopener noreferrer" class="text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 underline underline-offset-2">Nitik Paswan</a></p>
+          <p className="text-xs text-neutral-400">Made by <a href="https://github.com/Nitikpsn" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 underline underline-offset-2">Nitik Paswan</a></p>
         </div>
       </aside>
 

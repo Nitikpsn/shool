@@ -5,6 +5,8 @@ from config import settings
 from services.excel_parser import parse_excel
 from services.comparator import compare
 from services.stats_engine import compute_stats
+from services.category_parser import parse_category_file
+from services.category_comparator import compare_categories
 from services.gemini_service import gemini_service
 
 router = APIRouter(prefix="/api")
@@ -54,3 +56,18 @@ def get_stats(session_id: str):
     stats = compute_stats(portal_records)
 
     return stats
+
+
+@router.post("/compare/categories")
+def run_category_comparison(req: CompareRequest):
+    session_dir = os.path.join(UPLOAD_DIR, req.session_id)
+    if not os.path.exists(session_dir):
+        raise HTTPException(404, "Session not found")
+
+    school_path = _resolve(session_dir, "school")
+    portal_path = _resolve(session_dir, "portal")
+
+    school_data = parse_category_file(school_path, "school")
+    govt_data = parse_category_file(portal_path, "portal")
+
+    return compare_categories(school_data, govt_data)
