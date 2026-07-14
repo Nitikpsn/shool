@@ -1,6 +1,6 @@
-# School Sync AI
+# CTFT Comparison Tool for Teachers
 
-AI-powered Excel comparison tool for schools. Compare student records against portal data, generate CBSE/KVS reports, and query data in plain English or Hindi.
+AI-powered Excel comparison tool for KV teachers. Compare student records against portal data, generate CBSE/KVS reports, and query data in plain English or Hindi.
 
 ## Prerequisites
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Upload, GitCompare, FileSpreadsheet, Menu, LayoutDashboard, Moon, Sun, X } from 'lucide-react'
+import { Upload, GitCompare, FileSpreadsheet, Menu, LayoutDashboard, Moon, Sun, X, BookOpen, AlertTriangle } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/', label: 'Upload', icon: Upload },
   { path: '/compare', label: 'Compare', icon: GitCompare },
   { path: '/reports', label: 'Reports', icon: FileSpreadsheet },
+  { path: '/how-to-use', label: 'How to Use', icon: BookOpen },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -46,7 +47,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div className="w-7 h-7 rounded-lg bg-neutral-900 dark:bg-neutral-100 flex items-center justify-center">
               <LayoutDashboard className="w-4 h-4 text-white dark:text-neutral-900" />
             </div>
-            <span className="font-semibold text-neutral-800 dark:text-neutral-200">DataSync</span>
+            <span className="font-semibold text-neutral-800 dark:text-neutral-200 text-sm">CTFT Comparison Tool</span>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden p-1 text-neutral-400">
             <X className="w-4 h-4" />
@@ -101,8 +102,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3 text-center">
-          <p className="text-xs text-neutral-400">Made by <a href="https://github.com/Nitikpsn" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 underline underline-offset-2">Nitik Paswan</a></p>
+        <div className="border-t border-neutral-100 dark:border-neutral-800 px-4 py-3 space-y-2">
+          <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-lg">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <p className="text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+              This app is only for KV teachers for comparing Excel student data.
+            </p>
+          </div>
+          <p className="text-xs text-neutral-400 text-center">Made by <a href="https://github.com/Nitikpsn" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 underline underline-offset-2">Nitik Paswan</a></p>
         </div>
       </aside>
 

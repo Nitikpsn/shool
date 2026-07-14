@@ -91,8 +91,8 @@ export default function Home() {
   return (
     <div>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">DataSync</h1>
-        <p className="text-sm text-neutral-500 mt-1">Upload two files to compare and find differences</p>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">CTFT Comparison Tool for Teachers</h1>
+        <p className="text-sm text-neutral-500 mt-1">Upload two Excel files to compare and find differences</p>
       </div>
 
       <div className="card">
