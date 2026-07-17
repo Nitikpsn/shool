@@ -36,6 +36,8 @@ CATEGORY_COMPARE_FIELDS = [
     "minority_total", "cwsn", "rte", "sgc",
 ]
 
+PRIMARY_CATEGORY_FIELDS = ["general", "obc", "sc", "st", "cwsn", "rte", "sgc"]
+
 CLASS_KEYWORDS = ["class", "grade", "standard", "cls", "कक्षा", "क्लास", "वर्ग"]
 
 SECTION_KEYWORDS = ["section", "अनुभाग", "सेक्शन", "sec", "section_name", "भाग"]
@@ -357,6 +359,34 @@ def _parse_numeric(val: Any) -> int:
         return 0
 
 
+def _validate_and_fix_total(row_data: dict[str, int]) -> dict[str, int]:
+    """
+    Validate total against category sums. If category columns sum to more
+    than the stated total (double-counting from combined+split columns),
+    use the larger category sum as the authoritative total.
+    """
+    stated_total = row_data.get("total", 0)
+
+    all_cat_sum = sum(
+        v for k, v in row_data.items()
+        if k != "total" and k in CATEGORY_COMPARE_FIELDS
+    )
+
+    primary_sum = sum(
+        v for k, v in row_data.items()
+        if k != "total" and k in PRIMARY_CATEGORY_FIELDS
+    )
+
+    if stated_total > 0 and all_cat_sum > stated_total:
+        row_data["total"] = all_cat_sum
+        row_data["_total_corrected"] = True
+    elif stated_total == 0 and all_cat_sum > 0:
+        row_data["total"] = all_cat_sum
+        row_data["_total_corrected"] = True
+
+    return row_data
+
+
 def _col_val(row: pd.Series, raw_key: Any) -> Any:
     if isinstance(raw_key, int):
         return row.iloc[raw_key]
@@ -484,6 +514,7 @@ def aggregate_by_class(
         # Use the dedicated total column as the authoritative student count
         if "_row_total" in grp.columns:
             row["total"] = _parse_numeric(grp["_row_total"].sum())
+        row = _validate_and_fix_total(row)
         result[normalize_class_label(cls_val)] = row
 
     return result
@@ -581,6 +612,7 @@ def aggregate_by_section(
                 entry[c] = _parse_numeric(row.get(c, 0))
         if "_row_total" in grouped.columns:
             entry["total"] = _parse_numeric(row.get("_row_total", 0))
+        entry = _validate_and_fix_total(entry)
         result[class_id] = entry
     return result
 

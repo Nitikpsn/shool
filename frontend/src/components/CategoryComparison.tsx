@@ -1,5 +1,5 @@
 import type { CategoryCompareResult, MetricValue } from '../types'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, AlertTriangle } from 'lucide-react'
 
 const CATEGORY_LABELS: Record<string, string> = {
   students: 'Students',
@@ -58,8 +58,25 @@ export default function CategoryComparison({ result }: { result: CategoryCompare
   }
   const metricKeys = Array.from(allMetrics)
 
+  const hasCorrection = summary.school_corrected || summary.portal_corrected
+
   return (
     <div className="space-y-5">
+      {hasCorrection && (
+        <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-xs text-amber-700 dark:text-amber-300">
+            <p className="font-medium mb-0.5">Total corrected from category breakdown</p>
+            {summary.school_corrected && (
+              <p>School: category columns sum to {summary.school_category_sum?.toLocaleString()}, which exceeds the stated total — using category sum for accurate comparison.</p>
+            )}
+            {summary.portal_corrected && (
+              <p>Portal: category columns sum to {summary.portal_category_sum?.toLocaleString()}, which exceeds the stated total — using category sum for accurate comparison.</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-notion-sidebar dark:bg-notion-hover-dark rounded-lg p-3">
           <p className="text-[10px] text-notion-text-tertiary mb-0.5">School Record Total</p>

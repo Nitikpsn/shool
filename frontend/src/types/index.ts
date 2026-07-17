@@ -77,6 +77,10 @@ export interface CategoryCompareResult {
     school_total: number
     portal_total: number
     net_difference: number
+    school_category_sum?: number
+    portal_category_sum?: number
+    school_corrected?: boolean
+    portal_corrected?: boolean
   }
   discrepancies: Discrepancy[]
 }
