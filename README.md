@@ -4,35 +4,78 @@ AI-powered Excel comparison tool for KV teachers. Compare student records agains
 
 ## Prerequisites
 
-- Python 3.13+
-- Node.js 18+
-- (Optional) Google Gemini API key for AI features
+Before you begin, make sure you have the following installed on your machine:
 
-## Getting Started
+- **Python 3.13+** — You can check by running `python --version` or `python3 --version`
+- **Node.js 18+** — Check with `node -v`. If you don't have it, install from [nodejs.org](https://nodejs.org)
+- **(Optional) Google Gemini API key** — Only needed if you want the AI chat and smart column mapping features
 
-### Backend
+## Running Locally
+
+This project has two parts — a **backend** (Python/FastAPI) and a **frontend** (React/Vite). You'll need to run both at the same time in separate terminal windows.
+
+### 1. Clone the repo and open the project
+
+```bash
+git clone https://github.com/your-username/CTFT-1.git
+cd CTFT-1
+```
+
+### 2. Set up the Backend
+
+Open a new terminal and run these commands:
 
 ```bash
 cd backend
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload
 ```
 
-Create a `.env` file in the project root (next to `backend/`) with your key:
+Now create a `.env` file in the project root (the folder that has `backend/` and `frontend/` inside it):
 
 ```bash
 AI_API_KEY=your_google_gemini_api_key
 ```
 
-The `.env` file is in `.gitignore` and will not be committed.
+> If you don't have a Gemini API key, you can still use the app — the AI features just won't work.
 
-### Frontend
+Start the backend server:
+
+```bash
+uvicorn main:app --reload
+```
+
+The API will be running at **http://localhost:8000**. You can visit **http://localhost:8000/docs** to see the interactive API docs.
+
+### 3. Set up the Frontend
+
+Open a **second terminal** (keep the backend running in the first one) and run:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+The frontend will start at **http://localhost:5173**. Open that URL in your browser and you're good to go.
+
+### Quick recap — run these in two separate terminals:
+
+**Terminal 1 (Backend):**
+```bash
+cd backend
+source venv/bin/activate
+uvicorn main:app --reload
+```
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend
+npm run dev
+```
+
+Then open **http://localhost:5173** in your browser.
 
 ## API Endpoints
 
