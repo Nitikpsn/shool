@@ -19,7 +19,8 @@ Keeping student records accurate is a daily headache for teachers at Kendriya Vi
 - **Fuzzy matching** — Names are rarely spelled the same way in both files. The tool uses fuzzy string matching (via RapidFuzz) to handle typos, extra spaces, and minor spelling differences.
 - **Category and gender normalization** — "SC", "Sc", "sc", "Scheduled Caste" — the tool understands they all mean the same thing. Same for gender variations like "M", "Male", "Boy", etc.
 - **Natural language queries** — Don't feel like clicking through filters? Just type something like *"How many girls are in Class 5?"* or *"दिखाओ Class 3 के SC बच्चे"* and the AI will filter the data for you. Works in both English and Hindi.
-- **CBSE/KVS report generation** — Once the comparison is done, you can generate a formatted Excel report that follows CBSE/KVS conventions, ready to download and share.
+- **Aggregate data support** — Not just individual student records. The tool can also parse and compare class-level summary tables (SC/ST/OBC counts by class), handling merged headers, Hindi column names, and nested tables.
+- **CBSE/KVS report generation** — Once the comparison is done, you can generate a multi-sheet formatted Excel report that follows CBSE/KVS conventions, ready to download and share.
 
 ### Who is this for?
 
@@ -28,7 +29,7 @@ This tool is built for **KV (Kendriya Vidyalaya) teachers and administrators** w
 ### How does it work?
 
 1. **Upload** — You upload two files: your school's student data and the portal's student data (Excel or CSV)
-2. **Compare** — The backend parses both files, maps columns using AI, normalizes the data, and runs a row-by-row comparison
+2. **Compare** — The backend auto-detects the data type, maps columns using AI, normalizes the data, and runs a comparison
 3. **Review** — The frontend shows you a clear dashboard with stats, charts, and a detailed table of all differences
 4. **Report** — Generate and download a formatted CBSE/KVS report in Excel
 5. **Chat** — Ask questions about your data in plain English or Hindi
@@ -112,53 +113,75 @@ Then open **http://localhost:5173** in your browser.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/upload` | Upload two Excel/CSV files |
-| GET | `/api/sessions` | List recent upload sessions |
-| POST | `/api/compare` | Run a comparison |
-| GET | `/api/stats/{session_id}` | Get comparison statistics |
-| POST | `/api/reports` | Generate CBSE/KVS reports |
+| POST | `/api/upload` | Upload two Excel/CSV files (school + portal) |
+| GET | `/api/sessions` | List recent upload sessions (last 20) |
+| POST | `/api/compare` | Run comparison (auto-detects student vs aggregate data) |
+| GET | `/api/compare/stream/{session_id}` | Stream comparison progress via SSE |
+| GET | `/api/stats/{session_id}` | Get portal statistics (gender/category counts) |
+| POST | `/api/compare/categories` | Compare aggregate/class-level category data |
+| POST | `/api/reports` | Generate multi-sheet CBSE/KVS Excel report |
 | GET | `/api/reports/download/{session_id}` | Download the generated report |
-| POST | `/api/chat` | Query data in natural language or Hindi |
+| POST | `/api/chat` | Query data in natural language (English or Hindi) |
 
 ## Project Structure
 
 ```
-shool/
+CTFT-1/
+├── api/
+│   └── index.py               # Vercel serverless entry point
 ├── backend/
-│   ├── main.py              # FastAPI entry point
-│   ├── config.py            # App settings (API key, upload dirs)
-│   ├── requirements.txt
-│   ├── api/                 # HTTP route handlers
-│   │   ├── upload.py
-│   │   ├── compare.py
-│   │   ├── reports.py
-│   │   └── ai.py
-│   ├── services/            # Business logic
-│   │   ├── excel_parser.py
-│   │   ├── comparator.py
-│   │   ├── validator.py
-│   │   ├── stats_engine.py
-│   │   ├── exporter.py
-│   │   └── gemini_service.py
-│   └── utils/               # Helpers
-│       ├── normalize.py     # Gender/category/language normalization
-│       └── fuzzy_match.py   # Fuzzy string matching via RapidFuzz
-└── frontend/
-    ├── src/
-    │   ├── pages/           # Home, Compare, Reports
-    │   ├── components/      # UI components (tables, charts, upload, chat)
-    │   ├── services/        # API client
-    │   └── types/           # TypeScript interfaces
-    ├── package.json
-    └── vite.config.ts
+│   ├── main.py                 # FastAPI app, CORS, router mounting
+│   ├── config.py               # Settings via pydantic-settings (API key, dirs)
+│   ├── api/                    # HTTP route handlers
+│   │   ├── upload.py           # POST /api/upload, GET /api/sessions
+│   │   ├── compare.py          # POST /api/compare, GET /api/compare/stream/{id}, GET /api/stats/{id}
+│   │   ├── reports.py          # POST /api/reports, GET /api/reports/download/{id}
+│   │   ├── ai.py               # POST /api/chat
+│   │   └── utils.py            # resolve_file() helper
+│   ├── services/               # Business logic
+│   │   ├── excel_parser.py     # Excel/CSV parsing, column inference, data type detection
+│   │   ├── comparator.py       # 3-phase comparison: exact match → fuzzy → AI
+│   │   ├── validator.py        # Record and column validation
+│   │   ├── stats_engine.py     # Gender/category/class/language statistics
+│   │   ├── exporter.py         # Multi-sheet Excel report builder
+│   │   ├── gemini_service.py   # Google Gemini AI integration
+│   │   ├── data_profiler.py    # Statistical column detection (total, class, section)
+│   │   ├── category_parser.py  # Aggregate summary table parser (merged headers, Hindi)
+│   │   └── category_comparator.py  # Per-class category delta computation
+│   └── utils/                  # Shared helpers
+│       ├── normalize.py        # Gender/category/language/class normalization
+│       └── fuzzy_match.py      # Fuzzy string matching via RapidFuzz
+├── frontend/
+│   ├── src/
+│   │   ├── pages/              # Home, Compare, Reports, HowToUse
+│   │   ├── components/         # Layout, UploadZone, Dashboard, DataTable, AIChat, etc.
+│   │   ├── services/           # API client (fetch + SSE streaming)
+│   │   └── types/              # TypeScript interfaces
+│   ├── package.json
+│   └── vite.config.ts
+├── requirements.txt            # Python dependencies (root-level for Vercel)
+├── vercel.json                 # Vercel deployment config
+└── README.md
 ```
+
+## How Comparison Works
+
+The comparison engine runs in three phases:
+
+1. **Exact ID matching** — Records with the same admission number are paired directly
+2. **Fuzzy matching** — Unmatched records are scored using a weighted combination of name (50%), class (20%), gender (15%), and category (15%). Best pairs above the threshold are matched
+3. **AI matching** — Gemini AI suggests matches for any remaining unmatched records
+
+After matching, each pair is compared field-by-field. AI classifies each difference as a correction, rename, reclassification, or data entry error.
+
+For **aggregate data** (summary tables), the parser handles multi-row merged headers, Hindi column names, gender suffix detection, and statistical outlier removal for grand total rows.
 
 ## Tech Stack
 
-- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Recharts, TanStack Table, Lucide icons
-- **Backend:** FastAPI, Pandas, OpenPyXL, RapidFuzz
-- **AI:** Google Gemini 2.5 Flash — column mapping, Hindi normalization, natural language queries
+- **Frontend:** React 18, TypeScript, Vite 5, Tailwind CSS, Recharts, TanStack Table, react-dropzone, Lucide icons
+- **Backend:** FastAPI, Pandas, OpenPyXL, RapidFuzz, Pydantic/Pydantic-Settings, NumPy
+- **AI:** Google Gemini 2.5 Flash — column mapping, Hindi normalization, natural language queries, difference classification
 
 ## Deployment
 
-Deployed on Vercel — Python backend via `@vercel/python`, frontend as static build.
+Deployed on Vercel — Python backend via `@vercel/python`, frontend as static build from `dist/`.
