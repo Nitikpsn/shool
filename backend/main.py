@@ -6,7 +6,7 @@ from api.compare import router as compare_router
 from api.reports import router as reports_router
 from api.ai import router as ai_router
 
-app = FastAPI(title="School Sync AI", version="1.0.0")
+app = FastAPI(title="CTFT - Comparison Tool for Teachers", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,8 +23,9 @@ app.include_router(ai_router)
 
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the School Sync AI API!"}
+def root():
+    return {"message": "Welcome to the CTFT API!"}
+
 
 @app.get("/health")
 def health():

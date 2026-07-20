@@ -1,4 +1,6 @@
-import os, json, asyncio
+import os
+import json
+import asyncio
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -12,7 +14,6 @@ from services.gemini_service import gemini_service
 from api.utils import resolve_file
 
 router = APIRouter(prefix="/api")
-
 UPLOAD_DIR = settings.upload_dir
 
 
@@ -21,58 +22,68 @@ class CompareRequest(BaseModel):
 
 
 def _detect_and_compare(school_path: str, portal_path: str) -> dict:
+    """
+    Auto-detect data type and run appropriate comparison.
+    Returns unified result format for both student and aggregate data.
+    """
     school_type = detect_data_type(school_path)
     portal_type = detect_data_type(portal_path)
 
     if school_type == "aggregate" or portal_type == "aggregate":
-        school_data = parse_category_file(school_path, "school")
-        govt_data = parse_category_file(portal_path, "portal")
-        cat_result = compare_categories(school_data, govt_data)
+        return _compare_aggregate(school_path, portal_path)
 
-        discrepancies = cat_result.get("discrepancies", [])
-        modifications = []
-        modified_count = 0
-        for d in discrepancies:
-            for metric_name, mv in d.get("metrics", {}).items():
-                if mv.get("delta", 0) != 0:
-                    modifications.append({
-                        "class_id": d["class_id"],
-                        "field_name": metric_name,
-                        "old_value": str(mv.get("from", 0)),
-                        "new_value": str(mv.get("to", 0)),
-                        "record_name": f"Class {d['class_id']}",
-                        "difference_type": "modified",
-                    })
-                    modified_count += 1
+    return _compare_student(school_path, portal_path)
 
-        school_agg = school_data.get("aggregated", {})
-        govt_agg = govt_data.get("aggregated", {})
-        school_classes = set(school_agg.keys())
-        govt_classes = set(govt_agg.keys())
-        missing_classes = school_classes - govt_classes
-        new_classes = govt_classes - school_classes
 
-        return {
-            "data_type": "aggregate",
-            "matched": len(school_classes & govt_classes),
-            "missing": len(missing_classes),
-            "modified": modified_count,
-            "new": len(new_classes),
-            "matched_ids": list(school_classes & govt_classes),
-            "modifications": modifications,
-            "new_records": [{"class_id": c, "source": "portal"} for c in sorted(new_classes)],
-            "missing_records": [{"class_id": c, "source": "school"} for c in sorted(missing_classes)],
-            "category_result": cat_result,
-            "school_label": school_data.get("file_label", "School"),
-            "portal_label": govt_data.get("file_label", "Portal"),
-        }
-
+def _compare_student(school_path: str, portal_path: str) -> dict:
+    """Compare individual student records."""
     school_records = parse_excel(school_path, "school", ai_fallback=gemini_service)
     portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
-
     result = compare(school_records, portal_records, ai_service=gemini_service)
     result["data_type"] = "student"
     return result
+
+
+def _compare_aggregate(school_path: str, portal_path: str) -> dict:
+    """Compare aggregate/class-level summary data."""
+    school_data = parse_category_file(school_path, "school")
+    govt_data = parse_category_file(portal_path, "portal")
+    cat_result = compare_categories(school_data, govt_data)
+
+    # Extract modifications from discrepancies
+    modifications = []
+    modified_count = 0
+    for d in cat_result.get("discrepancies", []):
+        for metric_name, mv in d.get("metrics", {}).items():
+            if mv.get("delta", 0) != 0:
+                modifications.append({
+                    "class_id": d["class_id"],
+                    "field_name": metric_name,
+                    "old_value": str(mv.get("from", 0)),
+                    "new_value": str(mv.get("to", 0)),
+                    "record_name": f"Class {d['class_id']}",
+                    "difference_type": "modified",
+                })
+                modified_count += 1
+
+    # Find missing and new classes
+    school_classes = set(school_data.get("aggregated", {}).keys())
+    govt_classes = set(govt_data.get("aggregated", {}).keys())
+
+    return {
+        "data_type": "aggregate",
+        "matched": len(school_classes & govt_classes),
+        "missing": len(school_classes - govt_classes),
+        "modified": modified_count,
+        "new": len(govt_classes - school_classes),
+        "matched_ids": list(school_classes & govt_classes),
+        "modifications": modifications,
+        "new_records": [{"class_id": c, "source": "portal"} for c in sorted(govt_classes - school_classes)],
+        "missing_records": [{"class_id": c, "source": "school"} for c in sorted(school_classes - govt_classes)],
+        "category_result": cat_result,
+        "school_label": school_data.get("file_label", "School"),
+        "portal_label": govt_data.get("file_label", "Portal"),
+    }
 
 
 @router.post("/compare")
@@ -83,12 +94,11 @@ async def run_comparison(req: CompareRequest):
 
     school_path = resolve_file(session_dir, "school")
     portal_path = resolve_file(session_dir, "portal")
-
-    result = _detect_and_compare(school_path, portal_path)
-    return result
+    return _detect_and_compare(school_path, portal_path)
 
 
 async def _stream_compare(school_path: str, portal_path: str):
+    """Stream comparison events via SSE for real-time progress updates."""
     events = []
 
     def callback(event_type: str, data: dict):
@@ -97,9 +107,7 @@ async def _stream_compare(school_path: str, portal_path: str):
     loop = asyncio.get_event_loop()
 
     def run_compare():
-        school_type = detect_data_type(school_path)
-        portal_type = detect_data_type(portal_path)
-        if school_type == "aggregate" or portal_type == "aggregate":
+        if detect_data_type(school_path) == "aggregate" or detect_data_type(portal_path) == "aggregate":
             return
         school_records = parse_excel(school_path, "school", ai_fallback=gemini_service)
         portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
@@ -126,11 +134,7 @@ async def stream_comparison(session_id: str):
     return StreamingResponse(
         _stream_compare(school_path, portal_path),
         media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
 
 
@@ -142,8 +146,7 @@ def get_stats(session_id: str):
 
     portal_path = resolve_file(session_dir, "portal")
 
-    data_type = detect_data_type(portal_path)
-    if data_type == "aggregate":
+    if detect_data_type(portal_path) == "aggregate":
         portal_data = parse_category_file(portal_path, "portal")
         agg = portal_data.get("aggregated", {})
         stats = {
@@ -155,8 +158,7 @@ def get_stats(session_id: str):
         return stats
 
     portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
-    stats = compute_stats(portal_records)
-    return stats
+    return compute_stats(portal_records)
 
 
 @router.post("/compare/categories")
@@ -170,5 +172,4 @@ def run_category_comparison(req: CompareRequest):
 
     school_data = parse_category_file(school_path, "school")
     govt_data = parse_category_file(portal_path, "portal")
-
     return compare_categories(school_data, govt_data)

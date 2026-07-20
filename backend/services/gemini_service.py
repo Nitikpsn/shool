@@ -5,13 +5,18 @@ from config import settings
 
 
 class GeminiService:
+    """Google Gemini AI integration for column mapping, query processing, and diff analysis."""
+
     def __init__(self):
         self.client = None
         self.model = "gemini-2.5-flash-preview-05-07"
         if settings.ai_api_key:
             self.client = genai.Client(api_key=settings.ai_api_key)
 
+    # ---- Column Mapping ----
+
     def column_mapping(self, columns: list[str]) -> dict[str, str]:
+        """Ask AI to map arbitrary Excel column names to standard fields."""
         if not self.client:
             return self._fallback_mapping(columns)
 
@@ -21,12 +26,12 @@ class GeminiService:
             '{"admission_no": "original_col", ...}. Skip unmappable columns.\n\n'
             f"Columns: {columns}"
         )
-        response = self.client.models.generate_content(
-            model=self.model, contents=prompt
-        )
-        return self._parse_json(response.text)
+        return self._parse_json(self._ask(prompt))
+
+    # ---- Query Processing ----
 
     def normalize_query(self, query_text: str) -> str:
+        """Translate/normalize a natural language query to standard English terms."""
         if not self.client:
             return query_text
 
@@ -36,28 +41,26 @@ class GeminiService:
             "Return only the normalized query.\n\n"
             f"Query: {query_text}"
         )
-        response = self.client.models.generate_content(
-            model=self.model, contents=prompt
-        )
-        return response.text.strip()
+        return self._ask(prompt).strip()
 
     def query_to_filter(self, query_text: str, classes: list[str]) -> dict:
+        """Convert a natural language query into a structured filter dictionary."""
         if not self.client:
             return {}
 
         prompt = (
             "Convert this school query into a JSON filter object. "
-            "Available classes: " + ", ".join(classes) + ". "
+            f"Available classes: {', '.join(classes)}. "
             'Return like: {"gender": "boy", "category": "SC", "class_name": "6"}. '
             "Skip fields not mentioned. Return ONLY valid JSON.\n\n"
             f"Query: {query_text}"
         )
-        response = self.client.models.generate_content(
-            model=self.model, contents=prompt
-        )
-        return self._parse_json(response.text)
+        return self._parse_json(self._ask(prompt))
+
+    # ---- Report Generation ----
 
     def generate_report_summary(self, stats: dict) -> str:
+        """Generate a natural language summary of report data."""
         if not self.client:
             return "Report generated successfully."
 
@@ -65,33 +68,15 @@ class GeminiService:
             "Summarize this school data report in simple English for a teacher:\n"
             f"{stats}"
         )
-        response = self.client.models.generate_content(
-            model=self.model, contents=prompt
-        )
-        return response.text.strip()
+        return self._ask(prompt).strip()
 
-    def _fallback_mapping(self, columns: list[str]) -> dict[str, str]:
-        mapping = {}
-        lower_cols = {c: c.strip().lower() for c in columns}
-        for raw, lower in lower_cols.items():
-            if "admission" in lower or "roll" in lower or "id" in lower:
-                mapping["admission_no"] = raw
-            elif "name" in lower:
-                mapping["student_name"] = raw
-            elif "class" in lower or "grade" in lower or "standard" in lower:
-                mapping["class_name"] = raw
-            elif "gender" in lower or "sex" in lower:
-                mapping["gender"] = raw
-            elif "category" in lower or "caste" in lower:
-                mapping["category"] = raw
-            elif "language" in lower or "medium" in lower:
-                mapping["language"] = raw
-        return mapping
+    # ---- Difference Analysis ----
 
     def explain_difference(
-        self, school_record: dict, portal_record: dict, field: str,
-        old_val: str, new_val: str
+        self, school_record: dict, portal_record: dict,
+        field: str, old_val: str, new_val: str
     ) -> dict:
+        """Classify a field change as correction, rename, reclassification, or error."""
         if not self.client:
             return {
                 "type": "unknown",
@@ -114,31 +99,33 @@ class GeminiService:
             "- 'unknown': Cannot determine\n\n"
             "Return ONLY a JSON object with keys: type, explanation (1 sentence), confidence (0-1), action (accept/skip/review)."
         )
+
         try:
-            response = self.client.models.generate_content(
-                model=self.model, contents=prompt
-            )
-            result = self._parse_json(response.text)
+            result = self._parse_json(self._ask(prompt))
             if isinstance(result, dict) and result.get("type"):
                 return result
-            return {"type": "unknown", "explanation": "Could not classify.", "confidence": 0.0, "action": "review"}
         except Exception:
-            return {"type": "unknown", "explanation": "Could not analyze.", "confidence": 0.0, "action": "review"}
+            pass
+
+        return {"type": "unknown", "explanation": "Could not analyze.", "confidence": 0.0, "action": "review"}
+
+    # ---- Record Matching ----
 
     def suggest_best_match(
         self, unmatched_record: dict, candidates: list[dict], top_n: int = 3
     ) -> list[dict]:
+        """Find the best matching candidate record for an unmatched student."""
         if not self.client or not candidates:
             return []
 
-        rec_str = (
+        rec = (
             f"Record to match:\n"
             f"  Name: {unmatched_record.get('student_name', '')}\n"
             f"  Class: {unmatched_record.get('class_name', '')}\n"
             f"  Gender: {unmatched_record.get('gender', '')}\n"
             f"  Category: {unmatched_record.get('category', '')}\n"
         )
-        cand_str = "\n".join(
+        cands = "\n".join(
             f"  {i+1}. Name: {c.get('student_name', '')} | Class: {c.get('class_name', '')} "
             f"| Gender: {c.get('gender', '')} | Category: {c.get('category', '')}"
             for i, c in enumerate(candidates[:10])
@@ -147,27 +134,53 @@ class GeminiService:
         prompt = (
             "You are matching student records across two school data sources. "
             "The record below has no exact ID match in the other sheet. "
-            "Find the best matches from the candidate list. Consider name similarity, class, gender, and category.\n\n"
-            f"{rec_str}\nCandidates:\n{cand_str}\n\n"
+            "Find the best matches from the candidate list.\n\n"
+            f"{rec}\nCandidates:\n{cands}\n\n"
             "Return ONLY a JSON array of objects with keys: candidate_index (0-based), score (0-1), reason (short). "
-            "Sort by score descending. Max 3 results."
+            f"Sort by score descending. Max {top_n} results."
         )
+
         try:
-            response = self.client.models.generate_content(
-                model=self.model, contents=prompt
-            )
-            result = self._parse_json(response.text, allow_array=True)
+            result = self._parse_json(self._ask(prompt), allow_array=True)
             if isinstance(result, list):
                 return result
             if isinstance(result, dict) and "matches" in result:
                 return result["matches"]
-            return []
         except Exception:
-            return []
+            pass
+
+        return []
+
+    # ---- Internal Helpers ----
+
+    def _ask(self, prompt: str) -> str:
+        """Send a prompt to Gemini and return the response text."""
+        response = self.client.models.generate_content(model=self.model, contents=prompt)
+        return response.text or ""
+
+    def _fallback_mapping(self, columns: list[str]) -> dict[str, str]:
+        """Simple keyword-based column mapping when AI is unavailable."""
+        mapping = {}
+        for raw in columns:
+            lower = raw.strip().lower()
+            if any(kw in lower for kw in ("admission", "roll", "id")):
+                mapping["admission_no"] = raw
+            elif "name" in lower:
+                mapping["student_name"] = raw
+            elif any(kw in lower for kw in ("class", "grade", "standard")):
+                mapping["class_name"] = raw
+            elif any(kw in lower for kw in ("gender", "sex")):
+                mapping["gender"] = raw
+            elif any(kw in lower for kw in ("category", "caste")):
+                mapping["category"] = raw
+            elif any(kw in lower for kw in ("language", "medium")):
+                mapping["language"] = raw
+        return mapping
 
     def _parse_json(self, text: str, allow_array: bool = False) -> dict | list:
+        """Extract and parse JSON from AI response text (handles markdown code blocks)."""
         if not text:
-            return {} if not allow_array else []
+            return [] if allow_array else {}
 
         text = text.strip()
         if text.startswith("```"):
@@ -190,9 +203,7 @@ class GeminiService:
             except json.JSONDecodeError:
                 pass
 
-        if allow_array:
-            return []
-        return {}
+        return [] if allow_array else {}
 
 
 gemini_service = GeminiService()

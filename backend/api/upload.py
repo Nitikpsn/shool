@@ -1,4 +1,6 @@
-import os, uuid, time
+import os
+import uuid
+import time
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from config import settings
 from services.excel_parser import parse_excel
@@ -8,7 +10,6 @@ from services.gemini_service import gemini_service
 router = APIRouter(prefix="/api")
 
 ALLOWED_EXTENSIONS = {".xlsx", ".xls", ".csv"}
-
 UPLOAD_DIR = settings.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -24,13 +25,16 @@ def _validate_extension(filename: str):
 
 @router.post("/upload")
 async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
+    """Upload two Excel files (school + portal) and parse them into records."""
     _validate_extension(file1.filename or "school.xlsx")
     _validate_extension(file2.filename or "portal.xlsx")
 
+    # Create session directory
     session_id = str(uuid.uuid4())
     session_dir = os.path.join(UPLOAD_DIR, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
+    # Save files with standardized names
     ext1 = os.path.splitext(file1.filename or "school.xlsx")[1]
     ext2 = os.path.splitext(file2.filename or "portal.xlsx")[1]
     path1 = os.path.join(session_dir, f"school{ext1}")
@@ -41,9 +45,9 @@ async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
     with open(path2, "wb") as f:
         f.write(await file2.read())
 
+    # Parse both files
     school_records = parse_excel(path1, "school", ai_fallback=gemini_service)
     portal_records = parse_excel(path2, "portal", ai_fallback=gemini_service)
-
     errors = validate_records(school_records) + validate_records(portal_records)
 
     return {
@@ -52,15 +56,17 @@ async def upload(file1: UploadFile = File(...), file2: UploadFile = File(...)):
         "portal_rows": len(portal_records),
         "columns_mapped": list(school_records[0].keys()) if school_records else [],
         "errors": errors,
-        "school_sample": school_records[:3] if school_records else [],
-        "portal_sample": portal_records[:3] if portal_records else [],
+        "school_sample": school_records[:3],
+        "portal_sample": portal_records[:3],
     }
 
 
 @router.get("/sessions")
 def list_sessions():
+    """List recent upload sessions (last 20)."""
     if not os.path.exists(UPLOAD_DIR):
         return {"sessions": []}
+
     sessions = []
     for sid in sorted(os.listdir(UPLOAD_DIR), reverse=True):
         sdir = os.path.join(UPLOAD_DIR, sid)
@@ -72,4 +78,5 @@ def list_sessions():
                 "files": files,
                 "created": time.strftime("%Y-%m-%d %H:%M", time.localtime(mtime)),
             })
+
     return {"sessions": sessions[:20]}

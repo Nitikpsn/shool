@@ -1,73 +1,64 @@
 import pandas as pd
-import numpy as np
 from typing import Any
 
 TOTAL_KEYWORDS = [
-    "total", "grand", "subtotal", "students",
-    "योग", "संख्या", "कुल", "strength", "count",
-    "enrolled", "enrollment", "sum",
+    "total", "grand", "subtotal", "students", "योग", "संख्या",
+    "कुल", "strength", "count", "enrolled", "enrollment", "sum",
 ]
+
+CLASS_KEYWORDS = ["class", "grade", "standard", "cls", "कक्षा", "क्लास"]
+SECTION_KEYWORDS = ["section", "अनुभाग", "सेक्शन", "sec", "भाग"]
+KNOWN_CLASS_VALUES = {
+    "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII",
+    "LKG", "UKG", "NURSERY", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12",
+}
 
 
 def find_total_students_column(df: pd.DataFrame) -> str | None:
     """
-    Dynamically identify the 'Total Students' column by data profiling:
-    1. Check header keywords as a heuristic hint
-    2. Verify the candidate is numeric with reasonable student counts
-    3. Fallback: column with highest sum that isn't a sequential ID
+    Find the column that represents total student count.
+    Strategy: keyword match first, then statistical profiling to find the best numeric column.
     """
-    # Step 1: keyword match on headers
+    # Try keyword-based matching
     for col in df.columns:
         lower = str(col).strip().lower()
         if any(kw in lower for kw in TOTAL_KEYWORDS):
-            col_vals = pd.to_numeric(df[col], errors="coerce").dropna()
-            if len(col_vals) > 0:
-                median = col_vals.median()
-                max_val = col_vals.max()
-                # A total column should have reasonable student-range values
-                if 1 <= median <= 5000 and max_val < 50000:
-                    return col
+            vals = pd.to_numeric(df[col], errors="coerce").dropna()
+            if len(vals) > 0 and 1 <= vals.median() <= 5000 and vals.max() < 50000:
+                return col
 
-    # Step 2: profile numeric columns
-    numeric_cols = []
+    # Profile numeric columns and pick the most likely total
+    candidates = []
     for col in df.columns:
-        col_vals = pd.to_numeric(df[col], errors="coerce").dropna()
-        if len(col_vals) < 2:
+        vals = pd.to_numeric(df[col], errors="coerce").dropna()
+        if len(vals) < 2:
             continue
-        numeric_cols.append({
+        candidates.append({
             "name": col,
-            "sum": col_vals.sum(),
-            "median": col_vals.median(),
-            "mean": col_vals.mean(),
-            "max": col_vals.max(),
-            "is_monotonic": col_vals.is_monotonic_increasing,
-            "unique_diffs": col_vals.diff().dropna().nunique() if len(col_vals) > 1 else 0,
+            "sum": vals.sum(),
+            "is_sequential": vals.is_monotonic_increasing,
+            "unique_diffs": vals.diff().dropna().nunique() if len(vals) > 1 else 0,
+            "mean": vals.mean(),
         })
 
-    if not numeric_cols:
+    if not candidates:
         return None
 
-    # Sort by sum descending
-    numeric_cols.sort(key=lambda x: x["sum"], reverse=True)
+    candidates.sort(key=lambda x: x["sum"], reverse=True)
 
-    for nc in numeric_cols:
+    for c in candidates:
         # Skip auto-incrementing ID columns (1, 2, 3...)
-        if nc["is_monotonic"] and nc["unique_diffs"] <= 1:
+        if c["is_sequential"] and c["unique_diffs"] <= 1:
             continue
-        # Skip columns that look like row indices (values match row number)
-        if nc["mean"] < 50 and nc["is_monotonic"]:
+        if c["mean"] < 50 and c["is_sequential"]:
             continue
-        return nc["name"]
+        return c["name"]
 
-    return numeric_cols[0]["name"]
+    return candidates[0]["name"]
 
 
 def clean_grand_total_rows(df: pd.DataFrame, total_col: str) -> pd.DataFrame:
-    """
-    Remove summary/total rows by statistical outlier detection.
-    A grand total row will have a value in the total column that is
-    several times larger than a typical class-level row.
-    """
+    """Remove summary/total rows that are statistical outliers compared to class-level rows."""
     if total_col not in df.columns:
         return df
 
@@ -77,48 +68,37 @@ def clean_grand_total_rows(df: pd.DataFrame, total_col: str) -> pd.DataFrame:
     if pd.isna(median_val) or median_val == 0:
         return df
 
-    outlier_threshold = median_val * 2.5
-    clean_mask = values < outlier_threshold
-    cleaned = df[clean_mask].copy()
-
+    # A grand total row will have a value several times larger than a typical row
+    cleaned = df[values < median_val * 2.5].copy()
     return cleaned if len(cleaned) > 0 else df
 
 
 def detect_class_column(df: pd.DataFrame) -> str | None:
-    """Find the class/grade column by profiling."""
-    CLASS_KEYWORDS = ["class", "grade", "standard", "cls", "कक्षा", "क्लास"]
-
+    """Find the column that contains class/grade identifiers."""
+    # Keyword match
     for col in df.columns:
-        lower = str(col).strip().lower()
-        if any(kw in lower for kw in CLASS_KEYWORDS):
+        if any(kw in str(col).strip().lower() for kw in CLASS_KEYWORDS):
             return col
 
-    # Fallback: find a column with few unique values that look like class identifiers
+    # Fallback: column with few unique values that look like class identifiers
     for col in df.columns:
         unique_vals = df[col].dropna().unique()
         if 3 <= len(unique_vals) <= 20:
             sample = {str(v).strip().upper() for v in unique_vals}
-            has_class_indicators = any(
-                v.isdigit() or v in {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII",
-                                     "LKG", "UKG", "NURSERY", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"}
-                for v in sample
-            )
-            if has_class_indicators:
+            if any(v in KNOWN_CLASS_VALUES for v in sample):
                 return col
 
     return df.columns[0] if len(df.columns) > 0 else None
 
 
 def detect_section_column(df: pd.DataFrame) -> str | None:
-    """Find the section column by profiling."""
-    SECTION_KEYWORDS = ["section", "अनुभाग", "सेक्शन", "sec", "भाग"]
-
+    """Find the column that contains section identifiers (A, B, C, etc.)."""
+    # Keyword match
     for col in df.columns:
-        lower = str(col).strip().lower()
-        if any(kw in lower for kw in SECTION_KEYWORDS):
+        if any(kw in str(col).strip().lower() for kw in SECTION_KEYWORDS):
             return col
 
-    # Fallback: find a column with single-letter values (A, B, C...)
+    # Fallback: column with short alphabetic values
     for col in df.columns:
         unique_vals = df[col].dropna().unique()
         if 2 <= len(unique_vals) <= 10:
@@ -129,10 +109,12 @@ def detect_section_column(df: pd.DataFrame) -> str | None:
     return None
 
 
-def detect_category_columns(df: pd.DataFrame, class_col: str | None, section_col: str | None, total_col: str | None) -> dict[str, str]:
+def detect_category_columns(
+    df: pd.DataFrame, class_col: str | None, section_col: str | None, total_col: str | None
+) -> dict[str, str]:
     """
     Identify category columns (SC, ST, OBC, General, etc.).
-    These are numeric columns with small-ish values that aren't class, section, or total.
+    These are numeric columns with small values that aren't class, section, or total.
     """
     exclude = {str(c) for c in [class_col, section_col, total_col] if c}
     category_map: dict[str, str] = {}
@@ -158,7 +140,7 @@ def detect_category_columns(df: pd.DataFrame, class_col: str | None, section_col
         "girls": ["girls", "female", "बालिका", "छात्रा"],
     }
 
-    # First pass: keyword match headers
+    # First pass: keyword match
     for col in df.columns:
         if col in exclude:
             continue
@@ -173,13 +155,10 @@ def detect_category_columns(df: pd.DataFrame, class_col: str | None, section_col
     for col in df.columns:
         if col in mapped:
             continue
-        col_vals = pd.to_numeric(df[col], errors="coerce").dropna()
-        if len(col_vals) < 2:
+        vals = pd.to_numeric(df[col], errors="coerce").dropna()
+        if len(vals) < 2:
             continue
-        median = col_vals.median()
-        max_val = col_vals.max()
-        # Category columns typically have small non-negative integers
-        if 0 <= median <= 2000 and 0 <= max_val <= 10000:
+        if 0 <= vals.median() <= 2000 and 0 <= vals.max() <= 10000:
             category_map[col] = str(col).strip().lower().replace(" ", "_")
 
     return category_map
@@ -188,7 +167,7 @@ def detect_category_columns(df: pd.DataFrame, class_col: str | None, section_col
 def profile_dataframe(df: pd.DataFrame) -> dict[str, Any]:
     """
     Profile a dataframe to detect all relevant columns dynamically.
-    Returns a col_map dict (like resolve_columns) and detected metadata.
+    Returns column mapping and detected metadata.
     """
     df_str = df.map(lambda x: str(x).strip() if isinstance(x, str) else x)
 

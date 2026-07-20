@@ -2,22 +2,25 @@ from typing import Any
 
 
 def validate_records(records: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Check each record for required fields and return any errors found."""
     errors = []
-    for i, r in enumerate(records):
-        if not r.get("admission_no"):
+    for i, record in enumerate(records):
+        adm = record.get("admission_no", "")
+        name = record.get("student_name", "")
+
+        if not adm:
             errors.append({"row": i + 1, "field": "admission_no", "message": "Missing admission number"})
-        if r.get("admission_no") and len(str(r["admission_no"])) > 30:
+        elif len(str(adm)) > 30:
             errors.append({"row": i + 1, "field": "admission_no", "message": "Admission number too long"})
-        if not r.get("student_name"):
+
+        if not name:
             errors.append({"row": i + 1, "field": "student_name", "message": "Missing student name"})
+
     return errors
 
 
-def validate_columns(df_columns: list[str]) -> list[str]:
-    lower_cols = [c.strip().lower() for c in df_columns]
+def validate_columns(columns: list[str]) -> list[str]:
+    """Check if column headers suggest required fields are present."""
+    lower_cols = [c.strip().lower() for c in columns]
     required_hints = ["admission", "name"]
-    missing = []
-    for hint in required_hints:
-        if not any(hint in c for c in lower_cols):
-            missing.append(hint)
-    return missing
+    return [hint for hint in required_hints if not any(hint in c for c in lower_cols)]

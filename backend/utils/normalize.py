@@ -1,35 +1,42 @@
 import re
 from rapidfuzz import fuzz
 
+# ---- Gender: map any variant to "boy" or "girl" ----
 GENDER_MAP = {
-    "male": "boy", "m": "boy", "boy": "boy",
+    # English
+    "male": "boy", "m": "boy", "b": "boy", "boy": "boy",
     "male (boy)": "boy", "boy (m)": "boy",
-    "लड़का": "boy", "बालक": "boy", "छात्र": "boy",
-    "पुरुष": "boy", "b": "boy",
-    "female": "girl", "f": "girl", "girl": "girl",
+    # Hindi
+    "लड़का": "boy", "बालक": "boy", "छात्र": "boy", "पुरुष": "boy",
+    # English
+    "female": "girl", "f": "girl", "g": "girl", "girl": "girl",
     "female (girl)": "girl", "girl (f)": "girl",
-    "लड़की": "girl", "बालिका": "girl", "छात्रा": "girl",
-    "महिला": "girl", "g": "girl",
+    # Hindi
+    "लड़की": "girl", "बालिका": "girl", "छात्रा": "girl", "महिला": "girl",
 }
 
+# ---- Category: map any variant to standard code ----
 CATEGORY_MAP = {
-    "sc": "SC", "scheduled caste": "SC", "s.c.": "SC",
-    "s c": "SC", "अनुसूचित जाति": "SC", "एस.सी.": "SC",
-    "एससी": "SC",
-    "st": "ST", "scheduled tribe": "ST", "s.t.": "ST",
-    "s t": "ST", "अनुसूचित जनजाति": "ST", "एस.टी.": "ST",
-    "एसटी": "ST",
+    # SC
+    "sc": "SC", "scheduled caste": "SC", "s.c.": "SC", "s c": "SC",
+    "अनुसूचित जाति": "SC", "एस.सी.": "SC", "एससी": "SC",
+    # ST
+    "st": "ST", "scheduled tribe": "ST", "s.t.": "ST", "s t": "ST",
+    "अनुसूचित जनजाति": "ST", "एस.टी.": "ST", "एसटी": "ST",
+    # OBC
     "obc": "OBC", "other backward class": "OBC", "o.b.c.": "OBC",
     "o b c": "OBC", "अन्य पिछड़ा वर्ग": "OBC",
     "ओ.बी.सी.": "OBC", "ओबीसी": "OBC",
+    # EWS
     "ews": "EWS", "economically weaker section": "EWS",
     "e.w.s.": "EWS", "आर्थिक रूप से कमजोर": "EWS",
+    # General
     "general": "GEN", "gen": "GEN", "general category": "GEN",
     "g general": "GEN", "सामान्य": "GEN", "जनरल": "GEN",
-    "none": "GEN", "n/a": "GEN", "ur": "GEN",
-    "unreserved": "GEN",
+    "none": "GEN", "n/a": "GEN", "ur": "GEN", "unreserved": "GEN",
 }
 
+# ---- Category aliases for aggregate/summary tables ----
 CATEGORY_ALIASES = {
     "general": ["सामान्य", "general", "gen", "general category", "जनरल", "unreserved", "ur"],
     "obc": ["अन्य पिछड़ा वर्ग", "obc", "other backward class", "o.b.c.", "ओ.बी.सी.", "ओबीसी"],
@@ -52,20 +59,22 @@ CATEGORY_ALIASES = {
     "total": ["कुल", "योग", "total", "grand total", "संख्या", "कुल योग", "संख्या योग"],
 }
 
+# ---- Roman numerals for class labels ----
 ROMAN_MAP = {
     "i": 1, "ii": 2, "iii": 3, "iv": 4, "v": 5,
     "vi": 6, "vii": 7, "viii": 8, "ix": 9, "x": 10,
     "xi": 11, "xii": 12,
-    "xl": 40, "l": 50, "xc": 90, "c": 100,
 }
 
-CLASS_ORDER = {
+# ---- Named classes (pre-primary etc.) ----
+NAMED_CLASSES = {
     "nursery": -2, "nur": -2, "prep": -2,
     "lkg": -1, "lower kindergarten": -1,
     "ukg": 0, "upper kindergarten": 0,
     "pre-primary": -1, "pre primary": -1, "preprimary": -1,
 }
 
+# ---- Language normalization ----
 LANGUAGE_MAP = {
     "hindi": "Hindi", "hi": "Hindi", "हिंदी": "Hindi",
     "english": "English", "en": "English", "अंग्रेज़ी": "English",
@@ -76,31 +85,40 @@ LANGUAGE_MAP = {
 
 
 def normalize_gender(value: str) -> str:
-    v = value.strip().lower()
-    if not v:
+    """Convert any gender variant (English/Hindi) to 'boy' or 'girl'."""
+    clean = value.strip().lower()
+    if not clean:
         return ""
-    return GENDER_MAP.get(v, value.strip().title())
+    return GENDER_MAP.get(clean, value.strip().title())
 
 
 def normalize_category(value: str) -> str:
-    v = value.strip().lower()
-    if not v:
+    """Convert any category variant to standard code (SC, ST, OBC, EWS, GEN)."""
+    clean = value.strip().lower()
+    if not clean:
         return ""
-    return CATEGORY_MAP.get(v, value.strip().upper())
+    return CATEGORY_MAP.get(clean, value.strip().upper())
 
 
 def normalize_language(value: str) -> str:
-    v = value.strip().lower()
-    if not v:
+    """Convert language variant to standard form."""
+    clean = value.strip().lower()
+    if not clean:
         return ""
-    return LANGUAGE_MAP.get(v, value.strip().title())
+    return LANGUAGE_MAP.get(clean, value.strip().title())
 
 
 def resolve_alias(label: str, threshold: float = 80) -> tuple[str | None, str | None]:
+    """
+    Given a label like "OBC", "SC", "General", etc., find its canonical name
+    using exact match first, then fuzzy match as fallback.
+    Returns (canonical_name, matched_alias) or (None, None).
+    """
     clean = label.strip().lower()
     if not clean:
         return None, None
 
+    # Try exact match first
     for canonical, aliases in CATEGORY_ALIASES.items():
         if clean == canonical.lower():
             return canonical, canonical
@@ -108,26 +126,34 @@ def resolve_alias(label: str, threshold: float = 80) -> tuple[str | None, str | 
             if clean == alias.lower():
                 return canonical, alias
 
+    # Fallback: fuzzy match
     for canonical, aliases in CATEGORY_ALIASES.items():
         for alias in aliases:
-            score = fuzz.partial_ratio(clean, alias.lower())
-            if score >= threshold:
+            if fuzz.partial_ratio(clean, alias.lower()) >= threshold:
                 return canonical, alias
+
     return None, None
 
 
 def normalize_class_label(label: str) -> int | str:
-    clean = label.strip().lower().strip()
+    """
+    Convert a class label to a standard form:
+      - Roman numerals -> numbers (e.g., "VIII" -> 8)
+      - Named classes -> ordered numbers (e.g., "LKG" -> -1)
+      - Numeric strings -> int (e.g., "6" -> 6)
+      - Unknown -> pass through as string
+    """
+    clean = label.strip().lower()
     if not clean:
         return ""
 
+    # Strip common prefixes like "Class", "Grade", "कक्षा" etc.
     clean = re.sub(r'\s*(class|grade|standard|cls|कक्षा|क्लास|वर्ग)\s*', '', clean).strip()
 
-    if clean in CLASS_ORDER:
-        return CLASS_ORDER[clean]
+    if clean in NAMED_CLASSES:
+        return NAMED_CLASSES[clean]
     if clean in ROMAN_MAP:
         return ROMAN_MAP[clean]
-
     try:
         return int(float(clean))
     except (ValueError, TypeError):

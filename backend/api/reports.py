@@ -22,6 +22,7 @@ class ReportRequest(BaseModel):
 
 @router.post("/reports")
 def generate_report(req: ReportRequest):
+    """Generate a multi-sheet Excel report for the session."""
     session_dir = os.path.join(UPLOAD_DIR, req.session_id)
     if not os.path.exists(session_dir):
         raise HTTPException(404, "Session not found")
@@ -31,7 +32,6 @@ def generate_report(req: ReportRequest):
 
     school_records = parse_excel(school_path, "school", ai_fallback=gemini_service)
     portal_records = parse_excel(portal_path, "portal", ai_fallback=gemini_service)
-
     comparison = compare(school_records, portal_records)
     report_data = build_report_data(portal_records, comparison)
 
@@ -47,6 +47,7 @@ def generate_report(req: ReportRequest):
 
 @router.get("/reports/download/{session_id}")
 def download_report(session_id: str):
+    """Download the generated report as an Excel file."""
     path = os.path.join(REPORT_DIR, f"report_{session_id}.xlsx")
     if not os.path.exists(path):
         raise HTTPException(404, "Report not found")
