@@ -13,10 +13,25 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!assets/|api/).*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/compare/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/reports/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/how-to-use",
+      "dest": "/index.html"
+    },
+    {
+      "handle": "filesystem"
     }
   ]
 }
