@@ -141,7 +141,7 @@ export default function Compare() {
       <div className="flex items-center gap-3">
         <Link to="/" className="p-1 text-notion-text-tertiary hover:text-notion-text-secondary dark:hover:text-notion-text-secondary-dark"><ArrowLeft className="w-5 h-5" /></Link>
         <div>
-          <h1 className="text-lg font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">Comparison</h1>
+          <h1 className="text-lg font-semibold text-notion-text-primary dark:text-notion-text-primary-dark tracking-tight">Comparison</h1>
           <p className="text-xs text-notion-text-tertiary font-mono">
             {sessionId?.slice(0, 8)}
             {isAggregate && <span className="ml-1 px-1.5 py-0.5 bg-notion-sidebar dark:bg-notion-hover-dark rounded text-[9px]">Class-Level Data</span>}
@@ -251,14 +251,14 @@ export default function Compare() {
             <div className="flex items-center justify-center py-16">
               <div className="text-center">
                 <div className="w-5 h-5 border-2 border-notion-text-tertiary border-t-notion-text-primary rounded-full animate-spin mx-auto mb-2" />
-                <p className="text-xs text-notion-text-tertiary">Analyzing category data...</p>
+                <p className="text-xs text-notion-text-tertiary">Analyzing category breakdown...</p>
               </div>
             </div>
           ) : catResult ? (
             <CategoryComparison result={catResult} />
           ) : (
             <div className="py-16 text-center">
-              <p className="text-sm text-notion-text-tertiary">Could not parse category data from the uploaded files.</p>
+              <p className="text-sm text-notion-text-tertiary">No category data available for this upload.</p>
             </div>
           )}
         </>

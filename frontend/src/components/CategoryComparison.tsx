@@ -45,7 +45,7 @@ export default function CategoryComparison({ result }: { result: CategoryCompare
   if (discrepancies.length === 0) {
     return (
       <div className="text-sm text-notion-text-tertiary text-center py-8">
-        No category data found to compare.
+        No category-level data found to compare.
       </div>
     )
   }

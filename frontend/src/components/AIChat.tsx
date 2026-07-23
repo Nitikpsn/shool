@@ -39,7 +39,7 @@ export default function AIChat({ sessionId }: { sessionId: string | null }) {
 
       <div className="max-h-72 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && !error && (
-          <p className="text-xs text-notion-text-tertiary text-center py-6">Ask something like "show records where value is X"</p>
+          <p className="text-xs text-notion-text-tertiary text-center py-6">Ask anything about your data, e.g. "How many SC students in Class 5?"</p>
         )}
 
         {messages.map((msg, i) => (
@@ -112,7 +112,7 @@ export default function AIChat({ sessionId }: { sessionId: string | null }) {
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder='e.g. "Show records with X"'
+            placeholder='e.g. "Show all SC students in Class 3"'
             disabled={!sessionId}
             className="flex-1 px-3 py-1.5 text-sm border border-notion-border dark:border-notion-border-dark rounded bg-notion-hover dark:bg-notion-hover-dark text-notion-text-primary dark:text-notion-text-primary-dark placeholder-notion-text-tertiary focus:outline-none focus:ring-1 focus:ring-notion-text-secondary"
           />

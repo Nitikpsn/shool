@@ -106,7 +106,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-start gap-2 p-2 bg-notion-hover dark:bg-notion-hover-dark rounded">
             <AlertTriangle className="w-3.5 h-3.5 text-notion-text-secondary dark:text-notion-text-secondary-dark mt-0.5 flex-shrink-0" />
             <p className="text-[10px] leading-tight text-notion-text-secondary dark:text-notion-text-secondary-dark">
-              Only for KV teachers comparing Excel student data.
+              Built for KV teachers to compare Excel student data with the portal.
             </p>
           </div>
           <p className="text-[10px] text-notion-text-tertiary dark:text-notion-text-tertiary-dark text-center">Made by <a href="https://github.com/Nitikpsn" target="_blank" rel="noopener noreferrer" className="text-notion-text-secondary dark:text-notion-text-secondary-dark hover:text-notion-text-primary dark:hover:text-notion-text-primary-dark underline underline-offset-2">Nitik Paswan</a></p>

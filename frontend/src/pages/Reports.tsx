@@ -29,7 +29,7 @@ export default function Reports() {
       <div className="flex items-center gap-3">
         <Link to="/" className="p-1 text-notion-text-tertiary hover:text-notion-text-secondary dark:hover:text-notion-text-secondary-dark"><ArrowLeft className="w-5 h-5" /></Link>
         <div>
-          <h1 className="text-lg font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">Report</h1>
+          <h1 className="text-lg font-semibold text-notion-text-primary dark:text-notion-text-primary-dark tracking-tight">Report</h1>
           <p className="text-xs text-notion-text-tertiary font-mono">{sessionId?.slice(0, 8)}</p>
         </div>
         <div className="flex-1" />
@@ -48,7 +48,7 @@ export default function Reports() {
             </div>
             <div>
               <h2 className="text-sm font-medium text-notion-text-primary dark:text-notion-text-primary-dark">Generate Summary Report</h2>
-              <p className="text-sm text-notion-text-secondary mt-0.5">Export matching details and statistics as Excel</p>
+              <p className="text-sm text-notion-text-secondary mt-0.5">Export comparison results and statistics as a formatted Excel file</p>
             </div>
           </div>
 

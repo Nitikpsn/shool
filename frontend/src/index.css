@@ -3,11 +3,22 @@
 @tailwind utilities;
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.011em;
 }
 
 .dark body {
   color-scheme: dark;
+}
+
+::selection {
+  background: rgba(55, 55, 55, 0.15);
+}
+.dark ::selection {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .card {
@@ -24,4 +35,8 @@ body {
 
 .btn-secondary {
   @apply btn border border-notion-border dark:border-notion-border-dark text-notion-text-secondary dark:text-notion-text-secondary-dark hover:bg-notion-hover dark:hover:bg-notion-hover-dark;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.025em;
 }

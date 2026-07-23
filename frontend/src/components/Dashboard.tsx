@@ -7,7 +7,7 @@ export default function Dashboard({ stats }: { stats: any }) {
   if (!stats || !stats.labels || Object.keys(stats.labels).length === 0) {
     return (
       <div className="card p-8 text-center mt-4">
-        <p className="text-sm text-notion-text-tertiary">No stats</p>
+        <p className="text-sm text-notion-text-tertiary">No statistics to display yet</p>
       </div>
     )
   }

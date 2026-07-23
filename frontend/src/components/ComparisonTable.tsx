@@ -8,7 +8,7 @@ export default function ComparisonTable({ modifications, newRecords, missingReco
 
   const tabs = [
     { key: 'modified', label: 'Modified', count: modifications.length },
-    { key: 'new', label: 'New', count: newRecords.length },
+    { key: 'new', label: 'Added', count: newRecords.length },
     { key: 'missing', label: 'Missing', count: missingRecords.length },
   ]
 
@@ -71,7 +71,7 @@ export default function ComparisonTable({ modifications, newRecords, missingReco
 
       {tab === 'modified' && (
         <div>
-          <DataTable columns={modCols} data={modifications.map((m: any) => ({ ...m }))} emptyMessage="No modifications" />
+          <DataTable columns={modCols} data={modifications.map((m: any) => ({ ...m }))} emptyMessage="All records match — no modifications found" />
           {selectedMod && modifications
             .filter((m: any) => m.id + m.field_name === selectedMod && m.ai_insight)
             .map((m: any) => (
@@ -81,8 +81,8 @@ export default function ComparisonTable({ modifications, newRecords, missingReco
             ))}
         </div>
       )}
-      {tab === 'new' && <DataTable columns={dynCols} data={newRecords} emptyMessage="No new records" />}
-      {tab === 'missing' && <DataTable columns={dynCols} data={missingRecords} emptyMessage="No missing records" />}
+      {tab === 'new' && <DataTable columns={dynCols} data={newRecords} emptyMessage="No new records found" />}
+      {tab === 'missing' && <DataTable columns={dynCols} data={missingRecords} emptyMessage="No missing records found" />}
     </div>
   )
 }

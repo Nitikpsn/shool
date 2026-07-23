@@ -4,11 +4,11 @@ import { ArrowRight } from 'lucide-react'
 export default function HowToUse() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold text-notion-text-primary dark:text-notion-text-primary-dark mb-1">
+      <h1 className="text-3xl font-bold text-notion-text-primary dark:text-notion-text-primary-dark mb-1 tracking-tight">
         How to Use CTFT
       </h1>
-      <p className="text-sm text-notion-text-secondary mb-10">
-        A quick walkthrough of the three steps to compare your school data.
+      <p className="text-sm text-notion-text-secondary mb-10 leading-relaxed">
+        Three steps to find every mismatch between your school data and the portal.
       </p>
 
       <section className="mb-10">
@@ -17,14 +17,14 @@ export default function HowToUse() {
             1
           </span>
           <h2 className="text-base font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">
-            Upload Records
+            Upload your files
           </h2>
         </div>
         <p className="text-sm text-notion-text-secondary leading-relaxed ml-8">
-          Go to the Upload page and drag-and-drop two Excel files. File 1 is your
-          school's internal records (Hindi or English). File 2 is the Government
-          portal snapshot you want to compare against. Both formats are supported
-          side-by-side.
+          Drag and drop two Excel files onto the upload zone. The first file is your
+          school's internal records (Hindi or English columns are fine). The second
+          is the government portal snapshot you want to compare against. Both
+          languages and formats are handled side-by-side.
         </p>
       </section>
 
@@ -34,14 +34,14 @@ export default function HowToUse() {
             2
           </span>
           <h2 className="text-base font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">
-            AI Schema Sync
+            Let AI map your columns
           </h2>
         </div>
         <p className="text-sm text-notion-text-secondary leading-relaxed ml-8">
-          After uploading, click <strong>Compare</strong>. The engine automatically
-          matches columns across both files — SC/ST, OBC, RTE, Gender, etc. — even
-          when they are named differently or in different languages. No manual
-          mapping needed.
+          Hit <strong>Compare</strong> and the engine automatically matches columns
+          across both files, even when they are named differently or in different
+          languages. No manual renaming needed. Names are fuzzy-matched to handle
+          spelling differences between the two sources.
         </p>
       </section>
 
@@ -51,19 +51,19 @@ export default function HowToUse() {
             3
           </span>
           <h2 className="text-base font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">
-            Compare & Chat
+            Review and export
           </h2>
         </div>
         <p className="text-sm text-notion-text-secondary leading-relaxed ml-8">
-          View matched, modified, and missing records. Go to Reports to download a
-          multi-sheet CBSE/KVS formatted Excel. Use the AI Chat at the bottom of the
-          Compare page to ask questions in English or Hindi — for example: "How many
-          SC students are missing?" or "कितने छात्र अनुपस्थित हैं?"
+          Browse matched, modified, and missing records in a searchable table. Ask
+          the AI chat anything about your data in English or Hindi. When you're
+          ready, generate a multi-sheet CBSE/KVS formatted Excel report and download
+          it directly.
         </p>
       </section>
 
-      <div className="text-xs text-notion-text-tertiary border-t border-notion-border dark:border-notion-border-dark pt-6 mb-8">
-        This tool is intended for KV teachers to compare Excel student data. Do not
+      <div className="text-xs text-notion-text-tertiary border-t border-notion-border dark:border-notion-border-dark pt-6 mb-8 leading-relaxed">
+        This tool is intended for KV teachers comparing Excel student data. Do not
         upload sensitive or confidential information.
       </div>
 
@@ -71,7 +71,7 @@ export default function HowToUse() {
         to="/"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-notion-text-primary dark:text-notion-text-primary-dark hover:underline"
       >
-        Start Uploading <ArrowRight className="w-4 h-4" />
+        Start comparing <ArrowRight className="w-4 h-4" />
       </Link>
     </div>
   )

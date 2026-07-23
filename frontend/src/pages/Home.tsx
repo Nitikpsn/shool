@@ -37,8 +37,8 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
               <div>
-                <p className="text-sm font-medium text-notion-text-primary dark:text-notion-text-primary-dark">Uploaded successfully</p>
-                <p className="text-xs text-notion-text-tertiary font-mono">{result.session_id.slice(0, 8)}</p>
+                <p className="text-sm font-medium text-notion-text-primary dark:text-notion-text-primary-dark">Files uploaded successfully</p>
+                <p className="text-xs text-notion-text-tertiary font-mono">Session {result.session_id.slice(0, 8)}</p>
               </div>
             </div>
           </div>
@@ -50,7 +50,7 @@ export default function Home() {
                   <p className="text-[11px] text-notion-text-tertiary font-medium">School Records</p>
                 </div>
                 <p className="text-2xl font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">{result.school_rows.toLocaleString()}</p>
-                <p className="text-[11px] text-notion-text-tertiary mt-0.5">rows parsed</p>
+                <p className="text-[11px] text-notion-text-tertiary mt-0.5">students parsed</p>
               </div>
               <div className="bg-notion-sidebar dark:bg-notion-hover-dark rounded-lg p-4">
                 <div className="flex items-center gap-1.5 mb-1.5">
@@ -58,7 +58,7 @@ export default function Home() {
                   <p className="text-[11px] text-notion-text-tertiary font-medium">Portal Records</p>
                 </div>
                 <p className="text-2xl font-semibold text-notion-text-primary dark:text-notion-text-primary-dark">{result.portal_rows.toLocaleString()}</p>
-                <p className="text-[11px] text-notion-text-tertiary mt-0.5">rows parsed</p>
+                <p className="text-[11px] text-notion-text-tertiary mt-0.5">students parsed</p>
               </div>
               <div className="bg-notion-sidebar dark:bg-notion-hover-dark rounded-lg p-4">
                 <p className="text-[11px] text-notion-text-tertiary font-medium mb-1.5">Mapped Columns</p>
@@ -73,7 +73,7 @@ export default function Home() {
 
             {result.errors?.length > 0 && (
               <div className="mb-5 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/30 rounded-lg">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">{result.errors.length} validation error(s)</p>
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">{result.errors.length} validation issue{result.errors.length > 1 ? 's' : ''} found</p>
                 {result.errors.slice(0, 5).map((e: any, i: number) => (
                   <p key={i} className="text-xs text-amber-600 dark:text-amber-400">Row {e.row}: {e.message}</p>
                 ))}
@@ -97,8 +97,8 @@ export default function Home() {
   return (
     <div>
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-notion-text-primary dark:text-notion-text-primary-dark">CTFT Comparison Tool for Teachers</h1>
-        <p className="text-sm text-notion-text-secondary mt-1">Upload two Excel files to compare and find differences</p>
+        <h1 className="text-3xl font-bold text-notion-text-primary dark:text-notion-text-primary-dark tracking-tight">CTFT</h1>
+        <p className="text-base text-notion-text-secondary mt-1.5 max-w-md mx-auto leading-relaxed">Compare your school records with the KV portal. Spot every mismatch in seconds.</p>
       </div>
 
       <div className="card">
