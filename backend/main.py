@@ -22,11 +22,6 @@ app.include_router(reports_router)
 app.include_router(ai_router)
 
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to the CTFT API!"}
-
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
