@@ -4,6 +4,13 @@
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/((?!assets/|api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico).*)",
+      "destination": "/index.html"
+    }
   ]
 }

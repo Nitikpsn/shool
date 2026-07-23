@@ -1,9 +1,13 @@
 import sys
 from pathlib import Path
 
-file = Path(__file__).resolve()
-root = file.parents[1]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 
-sys.path.insert(0, str(root / "backend"))
+PYTHON_DEPS_DIR = ROOT_DIR / "python"
+if PYTHON_DEPS_DIR.exists() and str(PYTHON_DEPS_DIR) not in sys.path:
+    sys.path.insert(0, str(PYTHON_DEPS_DIR))
 
-from main import app
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from backend.main import app
