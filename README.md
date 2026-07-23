@@ -36,17 +36,15 @@ This tool is built for **KV (Kendriya Vidyalaya) teachers and administrators** w
 
 ## Prerequisites
 
-Before you begin, make sure you have the following installed on your machine:
-
-- **Python 3.13+** — You can check by running `python --version` or `python3 --version`
-- **Node.js 18+** — Check with `node -v`. If you don't have it, install from [nodejs.org](https://nodejs.org)
-- **(Optional) Google Gemini API key** — Only needed if you want the AI chat and smart column mapping features
+- **Python 3.12+** — `python --version` or `python3 --version`
+- **Node.js 18+** — `node -v`. Install from [nodejs.org](https://nodejs.org) if needed
+- **Google Gemini API key** *(optional)* — Only needed for AI chat and smart column mapping
 
 ## Running Locally
 
-This project has two parts — a **backend** (Python/FastAPI) and a **frontend** (React/Vite). You'll need to run both at the same time in separate terminal windows.
+This project has two parts — a **backend** (Python/FastAPI) and a **frontend** (React/Vite). Run both in separate terminals.
 
-### 1. Clone the repo and open the project
+### 1. Clone the repo
 
 ```bash
 git clone https://github.com/your-username/CTFT-1.git
@@ -55,8 +53,6 @@ cd CTFT-1
 
 ### 2. Set up the Backend
 
-Open a new terminal and run these commands:
-
 ```bash
 cd backend
 python -m venv venv
@@ -64,25 +60,25 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Now create a `.env` file in the project root (the folder that has `backend/` and `frontend/` inside it):
+Create a `.env` file in the **project root** (the folder containing `backend/` and `frontend/`):
 
-```bash
+```
 AI_API_KEY=your_google_gemini_api_key
 ```
 
-> If you don't have a Gemini API key, you can still use the app — the AI features just won't work.
+> Without a Gemini API key the app still works — AI features just won't be available.
 
-Start the backend server:
+Start the server:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-The API will be running at **http://localhost:8000**. You can visit **http://localhost:8000/docs** to see the interactive API docs.
+API runs at **http://localhost:8000**. Interactive docs at **http://localhost:8000/docs**.
 
 ### 3. Set up the Frontend
 
-Open a **second terminal** (keep the backend running in the first one) and run:
+Open a **second terminal** (keep the backend running):
 
 ```bash
 cd frontend
@@ -90,9 +86,9 @@ npm install
 npm run dev
 ```
 
-The frontend will start at **http://localhost:5173**. Open that URL in your browser and you're good to go.
+Frontend starts at **http://localhost:5173**.
 
-### Quick recap — run these in two separate terminals:
+### Quick recap
 
 **Terminal 1 (Backend):**
 ```bash
@@ -107,7 +103,7 @@ cd frontend
 npm run dev
 ```
 
-Then open **http://localhost:5173** in your browser.
+Then open **http://localhost:5173**.
 
 ## API Endpoints
 
@@ -132,6 +128,7 @@ CTFT-1/
 ├── backend/
 │   ├── main.py                 # FastAPI app, CORS, router mounting
 │   ├── config.py               # Settings via pydantic-settings (API key, dirs)
+│   ├── requirements.txt        # Python dependencies
 │   ├── api/                    # HTTP route handlers
 │   │   ├── upload.py           # POST /api/upload, GET /api/sessions
 │   │   ├── compare.py          # POST /api/compare, GET /api/compare/stream/{id}, GET /api/stats/{id}
@@ -156,11 +153,13 @@ CTFT-1/
 │   │   ├── pages/              # Home, Compare, Reports, HowToUse
 │   │   ├── components/         # Layout, UploadZone, Dashboard, DataTable, AIChat, etc.
 │   │   ├── services/           # API client (fetch + SSE streaming)
+│   │   ├── hooks/              # Shared utility hooks
 │   │   └── types/              # TypeScript interfaces
 │   ├── package.json
 │   └── vite.config.ts
 ├── requirements.txt            # Python dependencies (root-level for Vercel)
 ├── vercel.json                 # Vercel deployment config
+├── .python-version             # Python version for Vercel
 └── README.md
 ```
 
@@ -184,4 +183,8 @@ For **aggregate data** (summary tables), the parser handles multi-row merged hea
 
 ## Deployment
 
-Deployed on Vercel — Python backend via `@vercel/python`, frontend as static build from `dist/`.
+Deployed on Vercel — Python backend via `@vercel/python`, frontend as static build from `frontend/dist/`.
+
+## License
+
+[MIT](LICENSE)
